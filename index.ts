@@ -149,22 +149,26 @@ const loadPathModule = async () => {
 const configFileName = "nexlog.config.js";
 const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 	if (!isServer) {
+		console.log("📄 Not loading config file: not in server environment");
 		return {};
 	}
 
 	await loadPathModule();
 
 	if (!join) {
+		console.log("📄 Not loading config file: path module not available");
 		return {};
 	}
 
 	const configPath = join(process.cwd(), configFileName);
 
 	try {
-		// Usamos require para cargar el archivo de configuración
-		const userConfig = require(configPath);
-		console.info(`📄 Loaded config from ${configFileName}:`, userConfig);
-		return userConfig;
+		const userConfig = await import(configPath);
+		console.log(
+			`📄 Loaded config from ${configFileName}:`,
+			userConfig.default || userConfig,
+		);
+		return userConfig.default || userConfig;
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== "MODULE_NOT_FOUND") {
 			console.error(
@@ -172,7 +176,9 @@ const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 				error,
 			);
 		} else {
-			console.warn("⚠️ No config file found, using default configuration.");
+			console.log(
+				`📄 No config file found at ${configPath}, will use default configuration`,
+			);
 		}
 	}
 	return {};
@@ -192,19 +198,26 @@ const setConfig = (newConfig: Partial<NexlogConfig>) => {
 		}
 	}
 	config = { ...config, ...newConfig };
-	console.info("✅ Applied config:", config);
+	console.log("✅ Applied config:", config);
 };
 
 const initConfig = (() => {
 	let initialized = false;
 	return async () => {
 		if (!initialized) {
+			console.log("🚀 Initializing nexlog...");
 			const fileConfig = await loadConfigFile();
 			if (Object.keys(fileConfig).length > 0) {
+				console.log("📄 Applying configuration from file");
 				setConfig(fileConfig);
 			} else {
-				console.info("⚙️ Using default configuration.");
+				console.log("⚙️ Using default configuration");
 			}
+			console.log(`🌍 Current environment: ${getEnvironment()}`);
+			console.log(
+				`📊 Enabled environments: ${config.enabledEnvironments.join(", ")}`,
+			);
+			console.log(`🔊 Log level set to: ${config.level}`);
 			initialized = true;
 		}
 		return getConfig();
@@ -294,12 +307,19 @@ export {
 };
 
 const debugConfig = async () => {
+	console.log("🔍 Debug: Resetting configuration");
 	resetConfig();
+	console.log("🔍 Debug: Loading configuration file");
 	const fileConfig = await loadConfigFile();
 	if (Object.keys(fileConfig).length > 0) {
+		console.log("🔍 Debug: Applying configuration from file");
 		setConfig(fileConfig);
+	} else {
+		console.log("🔍 Debug: No file configuration found, using default");
 	}
-	return getConfig();
+	const finalConfig = getConfig();
+	console.log("🔍 Debug: Final configuration", finalConfig);
+	return finalConfig;
 };
 
 export { debugConfig };
