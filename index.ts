@@ -25,12 +25,12 @@ const logLevelEmojis: Record<LogLevel, string> = {
 
 class ServerLogger implements LoggerStrategy {
 	private levelColors: Record<LogLevel, string> = {
-		trace: "\x1b[90m", // gray
-		debug: "\x1b[36m", // cyan
-		info: "\x1b[32m", // green
-		warn: "\x1b[33m", // yellow
-		error: "\x1b[31m", // red
-		fatal: "\x1b[31m", // red
+		trace: "\x1b[90m",
+		debug: "\x1b[36m",
+		info: "\x1b[32m",
+		warn: "\x1b[33m",
+		error: "\x1b[31m",
+		fatal: "\x1b[31m",
 	};
 
 	private resetColor = "\x1b[0m";
@@ -120,21 +120,21 @@ const defaultConfig: NexlogConfig = {
 	enabledEnvironments: ["server", "browser", "edge"],
 };
 
-import { promises as fs } from "fs";
-
-let join: (...args: string[]) => string;
+let join: ((...args: string[]) => string) | undefined;
 
 const loadPathModule = async () => {
-	if (isServer) {
+	if (isServer && !join) {
 		try {
 			const pathModule = await import("path");
 			join = pathModule.join;
 		} catch (error) {
-			console.error("❌ Error importing path module:", error);
+			console.error("❌ Path module not available");
+			join = undefined;
 		}
 	}
 };
 
+const configFileName = "nexlog.config.js";
 const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 	if (isBrowser || isNextEdgeRuntime) {
 		console.info(
@@ -145,28 +145,28 @@ const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 
 	await loadPathModule();
 
-	try {
-		const configFiles = ["nexlog.config.js", "nexlog.config.ts"];
-		for (const file of configFiles) {
-			if (!join) {
-				console.error("❌ Path module not available");
-				return {};
-			}
-			const configPath = join(process.cwd(), file);
-			try {
-				const userConfig = require(configPath);
-				console.info(`📄 Loaded config from ${file}:`, userConfig);
-				return userConfig.default || userConfig;
-			} catch (error) {
-				if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-					console.error(`❌ Error loading nexlog config from ${file}:`, error);
-				}
-			}
-		}
-		console.warn("⚠️ No config file found, using default configuration.");
-	} catch (error) {
-		console.error("❌ Error loading configuration file:", error);
+	if (!join) {
+		throw new Error("❌ Path module not loaded.");
 	}
+	const configPath = join(process.cwd(), configFileName);
+
+	if (!configPath) {
+		throw new Error("❌ Config path could not be determined.");
+	}
+
+	try {
+		const userConfig = require(configPath);
+		console.info(`📄 Loaded config from ${configFileName}:`, userConfig);
+		return userConfig.default || userConfig;
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+			console.error(
+				`❌ Error loading nexlog config from ${configFileName}:`,
+				error,
+			);
+		}
+	}
+	console.warn("⚠️ No config file found, using default configuration.");
 	return {};
 };
 
