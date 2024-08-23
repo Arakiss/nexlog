@@ -120,6 +120,9 @@ const defaultConfig: NexlogConfig = {
 	enabledEnvironments: ["server", "browser", "edge"],
 };
 
+import { promises as fs } from "fs";
+import { join } from "path";
+
 const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 	if (isBrowser || isNextEdgeRuntime) {
 		return {};
@@ -127,13 +130,11 @@ const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 
 	// Server-side config loading
 	try {
-		const { readFile } = await import("node:fs/promises");
-		const { join } = await import("node:path");
 		const configFiles = ["nexlog.config.js", "nexlog.config.ts"];
 		for (const file of configFiles) {
 			const configPath = join(process.cwd(), file);
 			try {
-				const content = await readFile(configPath, "utf-8");
+				const content = await fs.readFile(configPath, "utf-8");
 				// Use dynamic import for ESM compatibility
 				const userConfig = await import(
 					`data:text/javascript,${encodeURIComponent(content)}`
