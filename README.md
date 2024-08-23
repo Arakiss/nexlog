@@ -2,6 +2,7 @@
 
 NextLogger is a simple and effective logging library for Next.js, compatible with server, browser, and edge environments.
 
+![CI/CD](https://github.com/Arakiss/nextlogger/actions/workflows/ci-cd.yml/badge.svg)
 ![npm version](https://img.shields.io/npm/v/nextlogger.svg)
 ![License](https://img.shields.io/npm/l/nextlogger.svg)
 

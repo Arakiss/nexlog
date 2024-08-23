@@ -1,0 +1,40 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+    - run: bun install
+    - run: bun run build
+    - run: bun test
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+    - run: bun install
+    - run: bun run build
+    - name: Publish to npm
+      run: |
+        npm config set //registry.npmjs.org/:_authToken ${NPM_TOKEN}
+        npm publish
+      env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
