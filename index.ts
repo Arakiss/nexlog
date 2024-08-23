@@ -124,18 +124,23 @@ import { promises as fs } from "fs";
 
 let join: (...args: string[]) => string;
 
-if (isServer) {
-	try {
-		({ join } = await import("path"));
-	} catch (error) {
-		console.error("Error importing path module:", error);
+const loadPathModule = async () => {
+	if (isServer) {
+		try {
+			const pathModule = await import("path");
+			join = pathModule.join;
+		} catch (error) {
+			console.error("Error importing path module:", error);
+		}
 	}
-}
+};
 
 const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 	if (isBrowser || isNextEdgeRuntime) {
 		return {};
 	}
+
+	await loadPathModule();
 
 	try {
 		const configFiles = ["nexlog.config.js", "nexlog.config.ts"];
@@ -146,10 +151,7 @@ const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 			}
 			const configPath = join(process.cwd(), file);
 			try {
-				const content = await fs.readFile(configPath, "utf-8");
-				const userConfig = await import(
-					`data:text/javascript,${encodeURIComponent(content)}`
-				);
+				const userConfig = require(configPath);
 				return userConfig.default || userConfig;
 			} catch (error) {
 				if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
@@ -158,7 +160,7 @@ const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 			}
 		}
 	} catch (error) {
-		console.error("Error importing fs/promises or path:", error);
+		console.error("Error loading configuration file:", error);
 	}
 	return {};
 };
