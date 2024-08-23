@@ -148,7 +148,7 @@ const loadPathModule = async () => {
 
 const configFileName = "nexlog.config.js";
 const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
-	if (isBrowser || isNextEdgeRuntime) {
+	if (!isServer) {
 		return {};
 	}
 
@@ -160,23 +160,21 @@ const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 
 	const configPath = join(process.cwd(), configFileName);
 
-	if (!configPath) {
-		throw new Error("❌ Config path could not be determined.");
-	}
-
 	try {
+		// Usamos require para cargar el archivo de configuración
 		const userConfig = require(configPath);
 		console.info(`📄 Loaded config from ${configFileName}:`, userConfig);
-		return userConfig.default || userConfig;
+		return userConfig;
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+		if ((error as NodeJS.ErrnoException).code !== "MODULE_NOT_FOUND") {
 			console.error(
 				`❌ Error loading nexlog config from ${configFileName}:`,
 				error,
 			);
+		} else {
+			console.warn("⚠️ No config file found, using default configuration.");
 		}
 	}
-	console.warn("⚠️ No config file found, using default configuration.");
 	return {};
 };
 
@@ -258,27 +256,21 @@ const log = (level: LogLevel, msg: string | undefined, meta: object = {}) => {
 
 const nexlog = {
 	trace: (msg: string | undefined, meta: object = {}) => {
-		initConfig();
 		log("trace", msg, meta);
 	},
 	debug: (msg: string | undefined, meta: object = {}) => {
-		initConfig();
 		log("debug", msg, meta);
 	},
 	info: (msg: string | undefined, meta: object = {}) => {
-		initConfig();
 		log("info", msg, meta);
 	},
 	warn: (msg: string | undefined, meta: object = {}) => {
-		initConfig();
 		log("warn", msg, meta);
 	},
 	error: (msg: string | undefined, meta: object = {}) => {
-		initConfig();
 		log("error", msg, meta);
 	},
 	fatal: (msg: string | undefined, meta: object = {}) => {
-		initConfig();
 		log("fatal", msg, meta);
 	},
 	setConfig,
