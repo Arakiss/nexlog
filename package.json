@@ -1,0 +1,48 @@
+{
+	"name": "nextlogger",
+	"version": "1.0.0",
+	"description": "A simple and effective logging library for Next.js, compatible with server, browser, and edge environments.",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"type": "module",
+	"scripts": {
+		"build": "bun build index.ts --outdir dist",
+		"prepublishOnly": "bun build index.ts --outdir dist",
+		"test": "bun test"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"typescript": "^5.0.0"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Arakiss/nextlogger.git"
+	},
+	"bugs": {
+		"url": "https://github.com/Arakiss/nextlogger/issues"
+	},
+	"homepage": "https://github.com/Arakiss/nextlogger#readme",
+	"keywords": [
+		"logging",
+		"next.js",
+		"typescript",
+		"bun",
+		"logger",
+		"node",
+		"javascript",
+		"library"
+	],
+	"author": "Arakiss",
+	"license": "MIT",
+	"engines": {
+		"bun": ">=0.1.0"
+	},
+	"funding": {
+		"type": "github",
+		"url": "https://github.com/sponsors/Arakiss"
+	}
+}
