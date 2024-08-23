@@ -1,12 +1,21 @@
+import fs from "node:fs";
+import path from "node:path";
+
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+export type LogEnvironment = "server" | "browser" | "edge";
 
 interface LogObject {
-	msg: string;
-	[key: string]: string | number | boolean | object;
+	msg: string | undefined;
+	[key: string]: string | number | boolean | object | undefined;
 }
 
 interface LoggerStrategy {
 	log(level: LogLevel, o: LogObject): void;
+}
+
+interface NexlogConfig {
+	level: LogLevel;
+	enabledEnvironments: LogEnvironment[];
 }
 
 class ServerLogger implements LoggerStrategy {
@@ -24,20 +33,22 @@ class ServerLogger implements LoggerStrategy {
 	log(level: LogLevel, o: LogObject): void {
 		const { msg, ...rest } = o;
 		const color = this.levelColors[level];
-		const formattedMessage = `[${new Date().toISOString()}] [${level.toUpperCase()}] ${msg}`;
+		const formattedMessage = `[${new Date().toISOString()}] [${level.toUpperCase()}] ${msg ?? "undefined"}`;
 		const additionalInfo = Object.keys(rest).length ? JSON.stringify(rest) : "";
 
-		console[level === "fatal" ? "error" : level](
-			`${color}${formattedMessage}${this.resetColor}`,
-			additionalInfo,
-		);
+		// Use the global console object
+		(
+			global.console[level === "fatal" ? "error" : level] as (
+				...args: (string | object)[]
+			) => void
+		)(`${color}${formattedMessage}${this.resetColor}`, additionalInfo);
 	}
 }
 
 class BrowserLogger implements LoggerStrategy {
 	log(level: LogLevel, o: LogObject): void {
 		const { msg, ...rest } = o;
-		const formattedMessage = `[${new Date().toISOString()}] [${level.toUpperCase()}] ${msg}`;
+		const formattedMessage = `[${new Date().toISOString()}] [${level.toUpperCase()}] ${msg ?? "undefined"}`;
 		const additionalInfo = Object.keys(rest).length ? JSON.stringify(rest) : "";
 
 		console[level === "fatal" ? "error" : level](
@@ -50,7 +61,7 @@ class BrowserLogger implements LoggerStrategy {
 class EdgeLogger implements LoggerStrategy {
 	log(level: LogLevel, o: LogObject): void {
 		const { msg, ...rest } = o;
-		const formattedMessage = `[${new Date().toISOString()}] [${level.toUpperCase()}] ${msg}`;
+		const formattedMessage = `[${new Date().toISOString()}] [${level.toUpperCase()}] ${msg ?? "undefined"}`;
 		const additionalInfo = Object.keys(rest).length ? JSON.stringify(rest) : "";
 
 		console[level === "fatal" ? "error" : level](
@@ -66,19 +77,21 @@ const isNextEdgeRuntime =
 	typeof process !== "undefined" && process.env.NEXT_RUNTIME === "edge";
 
 // Map of strategies based on environment
-const loggerStrategies: Record<string, LoggerStrategy> = {
+const loggerStrategies: Record<LogEnvironment, LoggerStrategy> = {
 	server: new ServerLogger(),
 	edge: new EdgeLogger(),
 	browser: new BrowserLogger(),
 };
 
-const getEnvironment = (): string => {
-	if (isServer) return "server";
-	if (isNextEdgeRuntime) return "edge";
-	return "browser";
+let currentEnvironment: LogEnvironment = "server"; // Valor por defecto
+
+const getEnvironment = (): LogEnvironment => {
+	return currentEnvironment;
 };
 
-const logger = loggerStrategies[getEnvironment()];
+const setEnvironment = (env: LogEnvironment) => {
+	currentEnvironment = env;
+};
 
 const logLevelPriority: Record<LogLevel, number> = {
 	trace: 0,
@@ -89,30 +102,85 @@ const logLevelPriority: Record<LogLevel, number> = {
 	fatal: 5,
 };
 
-let currentLogLevel: LogLevel = "trace";
+const defaultConfig: NexlogConfig = {
+	level: "info",
+	enabledEnvironments: ["server", "browser", "edge"],
+};
 
-const setLogLevel = (level: LogLevel) => {
-	currentLogLevel = level;
+const loadConfigFile = (): Partial<NexlogConfig> => {
+	const configFiles = ["nexlog.config.js", "nexlog.config.ts"];
+	for (const file of configFiles) {
+		const configPath = path.join(process.cwd(), file);
+		if (fs.existsSync(configPath)) {
+			try {
+				// eslint-disable-next-line @typescript-eslint/no-var-requires
+				const userConfig = require(configPath);
+				return userConfig.default || userConfig;
+			} catch (error) {
+				console.error(`Error loading nexlog config from ${file}:`, error);
+			}
+		}
+	}
+	return {};
+};
+
+let config: NexlogConfig = { ...defaultConfig, ...loadConfigFile() };
+
+const setConfig = (newConfig: Partial<NexlogConfig>) => {
+	if (newConfig.level && !(newConfig.level in logLevelPriority)) {
+		throw new Error(`Invalid log level: ${newConfig.level}`);
+	}
+	if (newConfig.enabledEnvironments) {
+		for (const env of newConfig.enabledEnvironments) {
+			if (!["server", "browser", "edge"].includes(env)) {
+				throw new Error(`Invalid environment: ${env}`);
+			}
+		}
+	}
+	config = { ...config, ...newConfig };
+};
+
+const getConfig = (): NexlogConfig => ({ ...config });
+
+const resetConfig = () => {
+	config = { ...defaultConfig };
 };
 
 const shouldLog = (level: LogLevel): boolean => {
-	return logLevelPriority[level] >= logLevelPriority[currentLogLevel];
+	const currentEnvironment = getEnvironment();
+	console.log(
+		`Checking log: level=${level}, config.level=${config.level}, environment=${currentEnvironment}`,
+	);
+	return (
+		logLevelPriority[level] >= logLevelPriority[config.level] &&
+		config.enabledEnvironments.includes(currentEnvironment)
+	);
 };
 
-export default {
-	trace: (msg: string, meta: object = {}) =>
-		shouldLog("trace") && logger.log("trace", { msg, ...meta }),
-	debug: (msg: string, meta: object = {}) =>
-		shouldLog("debug") && logger.log("debug", { msg, ...meta }),
-	info: (msg: string, meta: object = {}) =>
-		shouldLog("info") && logger.log("info", { msg, ...meta }),
-	warn: (msg: string, meta: object = {}) =>
-		shouldLog("warn") && logger.log("warn", { msg, ...meta }),
-	error: (msg: string, meta: object = {}) =>
-		shouldLog("error") && logger.log("error", { msg, ...meta }),
-	fatal: (msg: string, meta: object = {}) =>
-		shouldLog("fatal") && logger.log("fatal", { msg, ...meta }),
-	setLogLevel,
+const log = (level: LogLevel, msg: string | undefined, meta: object = {}) => {
+	if (shouldLog(level)) {
+		loggerStrategies[getEnvironment()].log(level, {
+			msg: msg ?? "undefined",
+			...meta,
+		});
+	}
 };
 
-export { isServer, isNextEdgeRuntime };
+const nexlog = {
+	trace: (msg: string | undefined, meta: object = {}) =>
+		log("trace", msg, meta),
+	debug: (msg: string | undefined, meta: object = {}) =>
+		log("debug", msg, meta),
+	info: (msg: string | undefined, meta: object = {}) => log("info", msg, meta),
+	warn: (msg: string | undefined, meta: object = {}) => log("warn", msg, meta),
+	error: (msg: string | undefined, meta: object = {}) =>
+		log("error", msg, meta),
+	fatal: (msg: string | undefined, meta: object = {}) =>
+		log("fatal", msg, meta),
+	setConfig,
+	getConfig,
+	resetConfig,
+};
+
+export default nexlog;
+export { isServer, isNextEdgeRuntime, setEnvironment };
