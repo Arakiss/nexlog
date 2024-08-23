@@ -13,7 +13,6 @@ import logger, {
 	type LogLevel,
 	type LogEnvironment,
 	setEnvironment,
-	type NexlogConfig,
 } from "./index";
 
 const originalConsole = global.console;
@@ -63,33 +62,44 @@ test("Logger functionality", () => {
 			level === "fatal"
 				? global.console.error
 				: global.console[level as keyof Console];
-		const mockedConsoleMethod = consoleMethod as unknown as Mock<
-			(...args: (string | object)[]) => void
+		const mockedConsoleMethod = consoleMethod as Mock<
+			(...args: unknown[]) => void
 		>;
 
-		console.log(`Checking ${level}:`, mockedConsoleMethod.mock.calls);
-
 		expect(mockedConsoleMethod).toHaveBeenCalled();
-		const lastCall =
-			mockedConsoleMethod.mock.calls[mockedConsoleMethod.mock.calls.length - 1];
-		expect(lastCall[0]).toContain(`[${level.toUpperCase()}]`);
-		expect(lastCall[0]).toContain("Test message");
-		expect(lastCall[1]).toBe('{"additionalInfo":"test"}');
+		const lastCall = getLastCallArgs(mockedConsoleMethod);
+		expect(lastCall).toBeDefined();
+		if (lastCall) {
+			expect(lastCall[0]).toContain(`[${level.toUpperCase()}]`);
+			expect(lastCall[0]).toContain("Test message");
+			expect(lastCall[1]).toBe('{"additionalInfo":"test"}');
+		}
 
 		mockedConsoleMethod.mockClear();
 	}
 
-	logger.setConfig({ level: "warn" });
+	logger.setConfig({ level: "warn" }); // Ensure the level is set to "warn"
+	console.log("Logger config after setting to warn:", logger.getConfig()); // Debugging line
+
 	(global.console.info as Mock<(...args: unknown[]) => void>).mockClear();
+
 	logger.info("This should not be logged");
-	expect(global.console.info).not.toHaveBeenCalled();
+	console.log(
+		"Info log should not be called, calls length:",
+		(global.console.info as Mock<(...args: unknown[]) => void>).mock.calls
+			.length,
+	); // Debugging line
+	expect(
+		(global.console.info as Mock<(...args: unknown[]) => void>).mock.calls
+			.length,
+	).toBe(0);
 
 	logger.warn("This should be logged");
 	expect(global.console.warn).toHaveBeenCalled();
 
 	logger.error("Error message");
 	const errorLastCallArgs = getLastCallArgs(
-		global.console.error as unknown as Mock<(...args: unknown[]) => void>,
+		global.console.error as Mock<(...args: unknown[]) => void>,
 	);
 	expect(errorLastCallArgs).toBeDefined();
 	if (errorLastCallArgs) {
@@ -118,9 +128,10 @@ test("Error handling", () => {
 	const infoMethod = global.console.info as Mock<(...args: unknown[]) => void>;
 	expect(infoMethod).toHaveBeenCalled();
 
-	const lastCallArgs = infoMethod.mock.calls[infoMethod.mock.calls.length - 1];
-	expect(lastCallArgs[0]).toContain("[INFO]");
-	expect(lastCallArgs[0]).toContain("undefined");
+	const lastCallArgs = getLastCallArgs(infoMethod);
+	expect(lastCallArgs).toBeDefined();
+	expect(lastCallArgs?.[0]).toContain("[INFO]");
+	expect(lastCallArgs?.[0]).toContain("undefined");
 });
 
 test("Config management", () => {
@@ -220,14 +231,13 @@ test("Emoji presence in log messages", () => {
 			level === "fatal"
 				? global.console.error
 				: global.console[level as keyof Console];
-		const mockedConsoleMethod = consoleMethod as unknown as Mock<
-			(...args: (string | object)[]) => void
+		const mockedConsoleMethod = consoleMethod as Mock<
+			(...args: unknown[]) => void
 		>;
 
 		expect(mockedConsoleMethod).toHaveBeenCalled();
-		const lastCall =
-			mockedConsoleMethod.mock.calls[mockedConsoleMethod.mock.calls.length - 1];
-		expect(lastCall[0]).toContain(emojis[index]);
+		const lastCall = getLastCallArgs(mockedConsoleMethod);
+		expect(lastCall?.[0]).toContain(emojis[index]);
 
 		mockedConsoleMethod.mockClear();
 	});
@@ -237,8 +247,8 @@ test("Timestamp format in log messages", () => {
 	logger.info("Test message");
 	const infoMethod = global.console.info as Mock<(...args: unknown[]) => void>;
 	expect(infoMethod).toHaveBeenCalled();
-	const lastCallArgs = infoMethod.mock.calls[infoMethod.mock.calls.length - 1];
-	expect(lastCallArgs[0]).toMatch(
+	const lastCallArgs = getLastCallArgs(infoMethod);
+	expect(lastCallArgs?.[0] ?? "").toMatch(
 		/\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z\]/,
 	);
 });
@@ -248,8 +258,8 @@ test("Meta object handling", () => {
 	logger.info("Test message", meta);
 	const infoMethod = global.console.info as Mock<(...args: unknown[]) => void>;
 	expect(infoMethod).toHaveBeenCalled();
-	const lastCallArgs = infoMethod.mock.calls[infoMethod.mock.calls.length - 1];
-	expect(lastCallArgs[1]).toBe(JSON.stringify(meta));
+	const lastCallArgs = getLastCallArgs(infoMethod);
+	expect(lastCallArgs?.[1]).toBe(JSON.stringify(meta));
 });
 
 test("Environment-specific logger behavior", () => {
@@ -259,9 +269,11 @@ test("Environment-specific logger behavior", () => {
 		(...args: unknown[]) => void
 	>;
 	expect(serverInfoMethod).toHaveBeenCalled();
-	const serverLastCallArgs =
-		serverInfoMethod.mock.calls[serverInfoMethod.mock.calls.length - 1];
-	expect(serverLastCallArgs[0]).toContain("\x1b[32m");
+	const serverLastCallArgs = getLastCallArgs(serverInfoMethod);
+	expect(serverLastCallArgs).toBeDefined();
+	if (serverLastCallArgs) {
+		expect(serverLastCallArgs[0]).toContain("\x1b[32m");
+	}
 
 	setEnvironment("browser");
 	logger.info("Browser log");
@@ -269,9 +281,8 @@ test("Environment-specific logger behavior", () => {
 		(...args: unknown[]) => void
 	>;
 	expect(browserInfoMethod).toHaveBeenCalled();
-	const browserLastCallArgs =
-		browserInfoMethod.mock.calls[browserInfoMethod.mock.calls.length - 1];
-	expect(browserLastCallArgs[0]).not.toContain("\x1b[32m");
+	const browserLastCallArgs = getLastCallArgs(browserInfoMethod);
+	expect(browserLastCallArgs?.[0]).not.toContain("\x1b[32m");
 
 	setEnvironment("edge");
 	logger.info("Edge log");
@@ -279,19 +290,17 @@ test("Environment-specific logger behavior", () => {
 		(...args: unknown[]) => void
 	>;
 	expect(edgeInfoMethod).toHaveBeenCalled();
-	const edgeLastCallArgs =
-		edgeInfoMethod.mock.calls[edgeInfoMethod.mock.calls.length - 1];
-	expect(edgeLastCallArgs[0]).not.toContain("\x1b[32m");
+	const edgeLastCallArgs = getLastCallArgs(edgeInfoMethod);
+	expect(edgeLastCallArgs?.[0]).not.toContain("\x1b[32m");
 });
 
 test("Async config initialization", async () => {
-	// Mock the entire module
 	mock.module("./index", () => {
 		const originalModule = require("./index");
 		return {
 			...originalModule,
 			loadConfigFile: async () => ({ level: "debug" }),
-			setConfig: originalModule.setConfig, // Ensure setConfig is available
+			setConfig: originalModule.setConfig,
 			initConfig: async () => {
 				const fileConfig = await originalModule.loadConfigFile();
 				originalModule.setConfig(fileConfig);
@@ -300,22 +309,12 @@ test("Async config initialization", async () => {
 		};
 	});
 
-	// Import the module after mocking
 	const { initConfig, resetConfig, default: logger } = await import("./index");
 
-	// Reset config to default
 	resetConfig();
 
-	// Log the config after reset
-	console.log("Config after reset in test:", logger.getConfig());
-
-	// Initialize config from the mocked loadConfigFile
 	const updatedConfig = await initConfig();
 
-	// Log the updated config to see what was applied
-	console.log("Updated config after initConfig in test:", updatedConfig);
-
-	// Check if the config was updated correctly
 	expect(updatedConfig.level).toBe("debug");
 	expect(logger.getConfig().level).toBe("debug");
 });

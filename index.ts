@@ -45,7 +45,7 @@ class ServerLogger implements LoggerStrategy {
 
 		(
 			global.console[level === "fatal" ? "error" : level] as (
-				...args: (string | object)[]
+				...args: unknown[]
 			) => void
 		)(`${color}${formattedMessage}${this.resetColor}`, additionalInfo);
 	}
@@ -136,7 +136,6 @@ let join: ((...args: string[]) => string) | undefined;
 const loadPathModule = async () => {
 	if (isServer && !join) {
 		try {
-			// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 			const pathModule = await import("path");
 			join = pathModule.join;
 		} catch (error) {
@@ -217,15 +216,30 @@ const resetConfig = () => {
 };
 
 const shouldLog = (level: LogLevel): boolean => {
-	const currentEnvironment = getEnvironment();
-	const shouldLog =
-		logLevelPriority[level] >= logLevelPriority[config.level] &&
-		config.enabledEnvironments.includes(currentEnvironment);
+	// Verificar si la configuración está cargada
+	if (!config) {
+		return false;
+	}
 
-	console.info(
-		`🔍 Should log? Level: ${level}, Environment: ${currentEnvironment}, ShouldLog: ${shouldLog}`,
-	);
-	return shouldLog;
+	// Verificar si el nivel de log es válido
+	if (!(level in logLevelPriority)) {
+		return false;
+	}
+
+	// Verificar si el entorno actual está habilitado
+	const currentEnvironment = getEnvironment();
+	if (!config.enabledEnvironments.includes(currentEnvironment)) {
+		return false;
+	}
+
+	// Verificar si el nivel de log es suficiente
+	const levelPriority = logLevelPriority[level];
+	const configLevelPriority = logLevelPriority[config.level];
+	if (levelPriority < configLevelPriority) {
+		return false;
+	}
+
+	return true;
 };
 
 const log = (level: LogLevel, msg: string | undefined, meta: object = {}) => {
@@ -237,10 +251,6 @@ const log = (level: LogLevel, msg: string | undefined, meta: object = {}) => {
 			msg: formattedMessage,
 			...meta,
 		});
-	} else {
-		console.info(
-			`🚫 Log skipped: Level: ${level}, Environment: ${getEnvironment()}`,
-		);
 	}
 };
 
