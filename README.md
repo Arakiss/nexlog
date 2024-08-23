@@ -9,7 +9,7 @@ nexlog is a simple, effective, and zero-dependency logging library for Next.js, 
 ## Features
 
 - Environment-aware logging (Server, Browser, Edge)
-- Customizable log levels
+- Customizable log levels and environments
 - Colored console output for server environments
 - Full TypeScript support
 - Lightweight and easy to use
@@ -43,8 +43,8 @@ bun add nexlog
 ```typescript
 import logger from 'nexlog';
 
-// Set log level (optional)
-logger.setLogLevel('info');
+// Set configuration (optional)
+logger.setConfig({ level: 'info', enabledEnvironments: ['server', 'browser', 'edge'] });
 
 // Log messages
 logger.info('This is an info message');
@@ -70,28 +70,45 @@ Browser/Edge environment:
 
 ## API
 
-### Log Levels
-
-- `trace`
-- `debug`
-- `info`
-- `warn`
-- `error`
-- `fatal`
-
 ### Methods
 
-- `logger.trace(message: string, meta?: object)`
-- `logger.debug(message: string, meta?: object)`
-- `logger.info(message: string, meta?: object)`
-- `logger.warn(message: string, meta?: object)`
-- `logger.error(message: string, meta?: object)`
-- `logger.fatal(message: string, meta?: object)`
-- `logger.setLogLevel(level: LogLevel)`
+- `logger.trace(message: string | undefined, meta?: object)`
+- `logger.debug(message: string | undefined, meta?: object)`
+- `logger.info(message: string | undefined, meta?: object)`
+- `logger.warn(message: string | undefined, meta?: object)`
+- `logger.error(message: string | undefined, meta?: object)`
+- `logger.fatal(message: string | undefined, meta?: object)`
+- `logger.setConfig(config: Partial<NexlogConfig>)`
+- `logger.getConfig(): NexlogConfig`
+- `logger.resetConfig()`
+
+### Configuration
+
+```typescript
+interface NexlogConfig {
+  level: LogLevel;
+  enabledEnvironments: LogEnvironment[];
+}
+
+type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+type LogEnvironment = "server" | "browser" | "edge";
+```
 
 ## Environment Detection
 
-nexlog automatically detects the current environment (server, browser, or edge) and adjusts its output accordingly. In server environments, it provides colored console output for better readability.
+nexlog automatically detects the current environment (server, browser, or edge) and adjusts its output accordingly. You can also manually set the environment or use helper functions for detection:
+
+```typescript
+import { setEnvironment, isServer, isNextEdgeRuntime } from 'nexlog';
+
+if (isServer) {
+  setEnvironment('server');
+} else if (isNextEdgeRuntime) {
+  setEnvironment('edge');
+} else {
+  setEnvironment('browser');
+}
+```
 
 ## Development
 
