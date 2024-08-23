@@ -136,10 +136,11 @@ let join: ((...args: string[]) => string) | undefined;
 const loadPathModule = async () => {
 	if (isServer && !join) {
 		try {
+			// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 			const pathModule = await import("path");
 			join = pathModule.join;
 		} catch (error) {
-			console.error("❌ Path module not available");
+			console.warn("⚠️ Path module not available, skipping config file load");
 			join = undefined;
 		}
 	}
@@ -148,17 +149,15 @@ const loadPathModule = async () => {
 const configFileName = "nexlog.config.js";
 const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 	if (isBrowser || isNextEdgeRuntime) {
-		console.info(
-			"🌐 Skipping config file load in browser or edge environment.",
-		);
 		return {};
 	}
 
 	await loadPathModule();
 
 	if (!join) {
-		throw new Error("❌ Path module not loaded.");
+		return {};
 	}
+
 	const configPath = join(process.cwd(), configFileName);
 
 	if (!configPath) {
@@ -198,15 +197,21 @@ const setConfig = (newConfig: Partial<NexlogConfig>) => {
 	console.info("✅ Applied config:", config);
 };
 
-const initConfig = async () => {
-	const fileConfig = await loadConfigFile();
-	if (Object.keys(fileConfig).length > 0) {
-		setConfig(fileConfig);
-	} else {
-		console.info("⚙️ Using default configuration.");
-	}
-	return getConfig();
-};
+const initConfig = (() => {
+	let initialized = false;
+	return async () => {
+		if (!initialized) {
+			const fileConfig = await loadConfigFile();
+			if (Object.keys(fileConfig).length > 0) {
+				setConfig(fileConfig);
+			} else {
+				console.info("⚙️ Using default configuration.");
+			}
+			initialized = true;
+		}
+		return getConfig();
+	};
+})();
 
 const getConfig = (): NexlogConfig => ({ ...config });
 
@@ -216,25 +221,22 @@ const resetConfig = () => {
 };
 
 const shouldLog = (level: LogLevel): boolean => {
-	// Verificar si la configuración está cargada
-	if (!config) {
+	const currentConfig = getConfig();
+	if (!currentConfig) {
 		return false;
 	}
 
-	// Verificar si el nivel de log es válido
 	if (!(level in logLevelPriority)) {
 		return false;
 	}
 
-	// Verificar si el entorno actual está habilitado
 	const currentEnvironment = getEnvironment();
-	if (!config.enabledEnvironments.includes(currentEnvironment)) {
+	if (!currentConfig.enabledEnvironments.includes(currentEnvironment)) {
 		return false;
 	}
 
-	// Verificar si el nivel de log es suficiente
 	const levelPriority = logLevelPriority[level];
-	const configLevelPriority = logLevelPriority[config.level];
+	const configLevelPriority = logLevelPriority[currentConfig.level];
 	if (levelPriority < configLevelPriority) {
 		return false;
 	}
@@ -255,16 +257,30 @@ const log = (level: LogLevel, msg: string | undefined, meta: object = {}) => {
 };
 
 const nexlog = {
-	trace: (msg: string | undefined, meta: object = {}) =>
-		log("trace", msg, meta),
-	debug: (msg: string | undefined, meta: object = {}) =>
-		log("debug", msg, meta),
-	info: (msg: string | undefined, meta: object = {}) => log("info", msg, meta),
-	warn: (msg: string | undefined, meta: object = {}) => log("warn", msg, meta),
-	error: (msg: string | undefined, meta: object = {}) =>
-		log("error", msg, meta),
-	fatal: (msg: string | undefined, meta: object = {}) =>
-		log("fatal", msg, meta),
+	trace: (msg: string | undefined, meta: object = {}) => {
+		initConfig();
+		log("trace", msg, meta);
+	},
+	debug: (msg: string | undefined, meta: object = {}) => {
+		initConfig();
+		log("debug", msg, meta);
+	},
+	info: (msg: string | undefined, meta: object = {}) => {
+		initConfig();
+		log("info", msg, meta);
+	},
+	warn: (msg: string | undefined, meta: object = {}) => {
+		initConfig();
+		log("warn", msg, meta);
+	},
+	error: (msg: string | undefined, meta: object = {}) => {
+		initConfig();
+		log("error", msg, meta);
+	},
+	fatal: (msg: string | undefined, meta: object = {}) => {
+		initConfig();
+		log("fatal", msg, meta);
+	},
 	setConfig,
 	getConfig,
 	resetConfig,
