@@ -130,13 +130,16 @@ const loadPathModule = async () => {
 			const pathModule = await import("path");
 			join = pathModule.join;
 		} catch (error) {
-			console.error("Error importing path module:", error);
+			console.error("❌ Error importing path module:", error);
 		}
 	}
 };
 
 const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 	if (isBrowser || isNextEdgeRuntime) {
+		console.info(
+			"🌐 Skipping config file load in browser or edge environment.",
+		);
 		return {};
 	}
 
@@ -146,21 +149,23 @@ const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 		const configFiles = ["nexlog.config.js", "nexlog.config.ts"];
 		for (const file of configFiles) {
 			if (!join) {
-				console.error("Path module not available");
+				console.error("❌ Path module not available");
 				return {};
 			}
 			const configPath = join(process.cwd(), file);
 			try {
 				const userConfig = require(configPath);
+				console.info(`📄 Loaded config from ${file}:`, userConfig);
 				return userConfig.default || userConfig;
 			} catch (error) {
 				if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-					console.error(`Error loading nexlog config from ${file}:`, error);
+					console.error(`❌ Error loading nexlog config from ${file}:`, error);
 				}
 			}
 		}
+		console.warn("⚠️ No config file found, using default configuration.");
 	} catch (error) {
-		console.error("Error loading configuration file:", error);
+		console.error("❌ Error loading configuration file:", error);
 	}
 	return {};
 };
@@ -169,22 +174,25 @@ let config: NexlogConfig = { ...defaultConfig };
 
 const setConfig = (newConfig: Partial<NexlogConfig>) => {
 	if (newConfig.level && !(newConfig.level in logLevelPriority)) {
-		throw new Error(`Invalid log level: ${newConfig.level}`);
+		throw new Error(`❌ Invalid log level: ${newConfig.level}`);
 	}
 	if (newConfig.enabledEnvironments) {
 		for (const env of newConfig.enabledEnvironments) {
 			if (!["server", "browser", "edge"].includes(env)) {
-				throw new Error(`Invalid environment: ${env}`);
+				throw new Error(`❌ Invalid environment: ${env}`);
 			}
 		}
 	}
 	config = { ...config, ...newConfig };
+	console.info("✅ Applied config:", config);
 };
 
 const initConfig = async () => {
 	const fileConfig = await loadConfigFile();
 	if (Object.keys(fileConfig).length > 0) {
 		setConfig(fileConfig);
+	} else {
+		console.info("⚙️ Using default configuration.");
 	}
 	return getConfig();
 };
@@ -193,6 +201,7 @@ const getConfig = (): NexlogConfig => ({ ...config });
 
 const resetConfig = () => {
 	config = { ...defaultConfig };
+	console.info("🔄 Configuration reset to default.");
 };
 
 const shouldLog = (level: LogLevel): boolean => {
