@@ -13,6 +13,8 @@ NextLogger is a simple and effective logging library for Next.js, compatible wit
 - Colored console output for server environments
 - Full TypeScript support
 - Lightweight and easy to use
+- Zero external dependencies
+- No side effects
 
 ## Installation
 
@@ -122,3 +124,36 @@ This project is licensed under the MIT License.
 ## Support
 
 If you find this project helpful, consider [sponsoring the author](https://github.com/sponsors/Arakiss).
+
+## FAQ
+
+### Is NextLogger related to the 'next-logger' package?
+
+No, NextLogger is not related to or affiliated with the 'next-logger' package. These are two independent projects with similar names but different implementations and purposes:
+
+- NextLogger (this project) is a lightweight, environment-aware logging library specifically designed for Next.js 14.x and later versions. It was created to address logging needs in modern Next.js applications across server, browser, and edge environments.
+
+- 'next-logger' is a separate project that patches Next.js's built-in logger to output logs as JSON, primarily focused on server-side logging.
+
+The similarity in names is coincidental. NextLogger was developed independently to solve specific logging challenges in recent Next.js versions, without prior knowledge of the 'next-logger' package.
+
+### Why create NextLogger when 'next-logger' exists?
+
+NextLogger was created to address specific logging needs in Next.js 14.x and later versions, particularly focusing on:
+
+1. Compatibility with server, browser, and edge environments in modern Next.js applications.
+2. Lightweight implementation with zero external dependencies.
+3. No side effects, ensuring it doesn't interfere with other parts of your application.
+4. Easy integration without the need for custom server setups or extensive configuration.
+
+While 'next-logger' is a valuable tool for JSON logging in Next.js server environments, NextLogger aims to provide a simple, universal logging solution across all Next.js runtime environments without introducing any external dependencies or side effects.
+
+### Does NextLogger have any external dependencies?
+
+No, NextLogger is designed to be completely self-contained and has zero external dependencies. This means you don't need to worry about compatibility issues or security vulnerabilities from third-party packages.
+
+### Does NextLogger have any side effects?
+
+No, NextLogger is carefully designed to avoid any side effects. It doesn't modify global objects or interfere with other parts of your application. This makes it safe to use in any part of your Next.js project without worrying about unexpected behavior.
+
+We apologize for any confusion this may cause and encourage users to carefully consider their specific logging needs when choosing between logging libraries.
