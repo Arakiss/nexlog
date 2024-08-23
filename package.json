@@ -1,5 +1,5 @@
 {
-	"name": "nextlogger",
+	"name": "nexlog",
 	"version": "1.0.0",
 	"description": "A simple and effective logging library for Next.js, compatible with server, browser, and edge environments.",
 	"main": "dist/index.js",
@@ -20,12 +20,12 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Arakiss/nextlogger.git"
+		"url": "https://github.com/Arakiss/nexlog.git"
 	},
 	"bugs": {
-		"url": "https://github.com/Arakiss/nextlogger/issues"
+		"url": "https://github.com/Arakiss/nexlog/issues"
 	},
-	"homepage": "https://github.com/Arakiss/nextlogger#readme",
+	"homepage": "https://github.com/Arakiss/nexlog#readme",
 	"keywords": [
 		"logging",
 		"next.js",
