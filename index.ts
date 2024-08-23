@@ -1,8 +1,9 @@
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
-export type LogEnvironment = "server" | "browser" | "edge";
+export type LogEnvironment = "server" | "browser" | "edge" | "custom";
 export type NexlogConfig = {
 	level: LogLevel;
 	enabledEnvironments: LogEnvironment[];
+	format?: (level: LogLevel, msg: string, meta: object) => string;
 };
 
 interface LogObject {
@@ -90,6 +91,13 @@ const loggerStrategies: Record<LogEnvironment, LoggerStrategy> = {
 	server: new ServerLogger(),
 	edge: new EdgeLogger(),
 	browser: new BrowserLogger(),
+	custom: {
+		log: (level: LogLevel, o: LogObject) => {
+			console.warn(
+				`Custom logger not implemented. Level: ${level}, Message: ${o.msg}`,
+			);
+		},
+	},
 };
 
 let currentEnvironment: LogEnvironment = isServer
@@ -104,6 +112,7 @@ const getEnvironment = (): LogEnvironment => {
 
 const setEnvironment = (env: LogEnvironment) => {
 	currentEnvironment = env;
+	console.info(`🌍 Environment set to: ${currentEnvironment}`);
 };
 
 const logLevelPriority: Record<LogLevel, number> = {
@@ -118,6 +127,8 @@ const logLevelPriority: Record<LogLevel, number> = {
 const defaultConfig: NexlogConfig = {
 	level: "info",
 	enabledEnvironments: ["server", "browser", "edge"],
+	format: (level, msg, meta) =>
+		`${logLevelEmojis[level]} [${new Date().toISOString()}] [${level.toUpperCase()}] ${msg} ${JSON.stringify(meta)}`,
 };
 
 let join: ((...args: string[]) => string) | undefined;
@@ -125,6 +136,7 @@ let join: ((...args: string[]) => string) | undefined;
 const loadPathModule = async () => {
 	if (isServer && !join) {
 		try {
+			// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 			const pathModule = await import("path");
 			join = pathModule.join;
 		} catch (error) {
@@ -178,7 +190,7 @@ const setConfig = (newConfig: Partial<NexlogConfig>) => {
 	}
 	if (newConfig.enabledEnvironments) {
 		for (const env of newConfig.enabledEnvironments) {
-			if (!["server", "browser", "edge"].includes(env)) {
+			if (!["server", "browser", "edge", "custom"].includes(env)) {
 				throw new Error(`❌ Invalid environment: ${env}`);
 			}
 		}
@@ -206,18 +218,29 @@ const resetConfig = () => {
 
 const shouldLog = (level: LogLevel): boolean => {
 	const currentEnvironment = getEnvironment();
-	return (
+	const shouldLog =
 		logLevelPriority[level] >= logLevelPriority[config.level] &&
-		config.enabledEnvironments.includes(currentEnvironment)
+		config.enabledEnvironments.includes(currentEnvironment);
+
+	console.info(
+		`🔍 Should log? Level: ${level}, Environment: ${currentEnvironment}, ShouldLog: ${shouldLog}`,
 	);
+	return shouldLog;
 };
 
 const log = (level: LogLevel, msg: string | undefined, meta: object = {}) => {
 	if (shouldLog(level)) {
+		const formattedMessage = config.format
+			? config.format(level, msg ?? "undefined", meta)
+			: `${logLevelEmojis[level]} [${new Date().toISOString()}] [${level.toUpperCase()}] ${msg ?? "undefined"} ${JSON.stringify(meta)}`;
 		loggerStrategies[getEnvironment()].log(level, {
-			msg: msg ?? "undefined",
+			msg: formattedMessage,
 			...meta,
 		});
+	} else {
+		console.info(
+			`🚫 Log skipped: Level: ${level}, Environment: ${getEnvironment()}`,
+		);
 	}
 };
 
