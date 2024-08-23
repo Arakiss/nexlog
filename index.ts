@@ -121,25 +121,35 @@ const defaultConfig: NexlogConfig = {
 };
 
 import { promises as fs } from "fs";
-import { join } from "path";
+
+let join: (...args: string[]) => string;
+
+if (isServer) {
+	try {
+		({ join } = await import("path"));
+	} catch (error) {
+		console.error("Error importing path module:", error);
+	}
+}
 
 const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 	if (isBrowser || isNextEdgeRuntime) {
 		return {};
 	}
 
-	// Server-side config loading
 	try {
 		const configFiles = ["nexlog.config.js", "nexlog.config.ts"];
 		for (const file of configFiles) {
+			if (!join) {
+				console.error("Path module not available");
+				return {};
+			}
 			const configPath = join(process.cwd(), file);
 			try {
 				const content = await fs.readFile(configPath, "utf-8");
-				// Use dynamic import for ESM compatibility
 				const userConfig = await import(
 					`data:text/javascript,${encodeURIComponent(content)}`
 				);
-				console.log("Loaded config:", userConfig.default || userConfig);
 				return userConfig.default || userConfig;
 			} catch (error) {
 				if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
@@ -156,7 +166,6 @@ const loadConfigFile = async (): Promise<Partial<NexlogConfig>> => {
 let config: NexlogConfig = { ...defaultConfig };
 
 const setConfig = (newConfig: Partial<NexlogConfig>) => {
-	console.log("Before applying config:", config);
 	if (newConfig.level && !(newConfig.level in logLevelPriority)) {
 		throw new Error(`Invalid log level: ${newConfig.level}`);
 	}
@@ -167,27 +176,20 @@ const setConfig = (newConfig: Partial<NexlogConfig>) => {
 			}
 		}
 	}
-	console.log("Applying config:", newConfig);
 	config = { ...config, ...newConfig };
-	console.log("After applying config:", config);
 };
 
 const initConfig = async () => {
 	const fileConfig = await loadConfigFile();
-	console.log("Config loaded from file:", fileConfig); // Verificar el valor de fileConfig
 	if (Object.keys(fileConfig).length > 0) {
-		console.log("Applying fileConfig:", fileConfig); // Verificar antes de aplicar
 		setConfig(fileConfig);
 	}
-	const finalConfig = getConfig();
-	console.log("Final config after initConfig:", finalConfig);
-	return finalConfig;
+	return getConfig();
 };
 
 const getConfig = (): NexlogConfig => ({ ...config });
 
 const resetConfig = () => {
-	console.log("Resetting config to default"); // Verificar cuándo se llama resetConfig
 	config = { ...defaultConfig };
 };
 
@@ -235,36 +237,17 @@ export {
 	resetConfig,
 	initConfig,
 	loadConfigFile,
-	setConfig, // Asegúrate de exportar setConfig
-	getConfig, // Asegúrate de exportar getConfig
+	setConfig,
+	getConfig,
 };
 
-// Added debug function
 const debugConfig = async () => {
-	console.log("Starting debugConfig...");
-
-	// Reset to default config
 	resetConfig();
-	console.log("Config after reset:", getConfig());
-
-	// Load and apply config from file
 	const fileConfig = await loadConfigFile();
-	console.log("Loaded fileConfig:", fileConfig);
-
 	if (Object.keys(fileConfig).length > 0) {
 		setConfig(fileConfig);
 	}
-
-	// Final config after applying fileConfig
-	const finalConfig = getConfig();
-	console.log("Final config after applying fileConfig:", finalConfig);
-
-	return finalConfig;
+	return getConfig();
 };
 
 export { debugConfig };
-
-// Uncomment the following lines to run the debugConfig function
-// (async () => {
-// 	await debugConfig();
-// })();
