@@ -1,6 +1,6 @@
 {
 	"name": "nexlog",
-	"version": "2.0.3",
+	"version": "2.0.4",
 	"description": "A simple and effective logging library for Next.js, compatible with server, browser, and edge environments.",
 	"main": "dist/index.js",
 	"module": "dist/index.js",
@@ -20,7 +20,7 @@
 	"files": ["dist"],
 	"type": "module",
 	"scripts": {
-		"build": "bun build src/index.ts --outdir dist && bun build src/react/logger-provider.tsx --outdir dist/react && tsc",
+		"build": "bun build src/index.ts --outdir dist --format esm && bun build src/react/logger-provider.tsx --outdir dist/react --format esm --config tsconfig.react.json && tsc",
 		"prepublishOnly": "bun run build",
 		"test": "bun test"
 	},
