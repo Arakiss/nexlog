@@ -27,6 +27,54 @@ yarn add nexlog
 bun add nexlog
 ```
 
+## Configuration with Next.js
+
+To use nexlog with Next.js, follow these steps:
+
+1. Install nexlog as shown above.
+
+2. Configure Next.js to transpile nexlog. In your `next.config.js` or `next.config.mjs`:
+
+```javascript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  transpilePackages: ["nexlog"],
+};
+
+export default nextConfig;
+```
+
+3. Use the LoggerProvider in your root layout (e.g., in `app/layout.tsx`):
+
+```typescript
+import { LoggerProvider } from 'nexlog/react';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <LoggerProvider>
+          {children}
+        </LoggerProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+4. In your components, use the `useLogger` hook:
+
+```typescript
+'use client';
+import { useLogger } from 'nexlog/react';
+
+export default function MyComponent() {
+  const logger = useLogger();
+  logger.info('MyComponent rendered');
+  return <div>My Component</div>;
+}
+```
+
 ## Usage
 
 ```typescript
@@ -111,58 +159,6 @@ if (isServer) {
 }
 ```
 
-## Integration with Next.js
-
-nexlog provides a React provider for easy integration with Next.js applications. Here's how to use it:
-
-1. Import the LoggerProvider in your root layout file (e.g., `app/layout.tsx`):
-```typescript
-import { LoggerProvider } from 'nexlog/react';
-```
-
-2. Wrap your application with the LoggerProvider:
-```typescript
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <html lang="en">
-      <body>
-        <LoggerProvider
-          initialLevel={process.env.NODE_ENV === 'production' ? 'warn' : 'info'}
-          ssrOnly={process.env.NODE_ENV === 'production'}
-          disabled={process.env.NODE_ENV === 'test'}
-        >
-          {children}
-        </LoggerProvider>
-      </body>
-    </html>
-  );
-}
-```
-
-The LoggerProvider accepts the following props:
-- `initialLevel`: Sets the initial log level (LogLevel type)
-- `ssrOnly`: When true, logs only on the server side (boolean)
-- `disabled`: When true, disables all logging (boolean)
-
-3. Use the logger in your components:
-```typescript
-import { useLogger } from 'nexlog/react';
-
-export default function MyComponent() {
-  const logger = useLogger();
-  
-  logger.info('MyComponent rendered');
-  
-  return <div>My Component</div>;
-}
-```
-
-This setup allows you to configure the logger globally and use it throughout your Next.js application with ease.
-
 ## Development
 
 To install dependencies:
@@ -210,3 +206,24 @@ No, nexlog is carefully designed to avoid any side effects. It doesn't modify gl
 ### Why is nexlog distributed as TypeScript files?
 
 Distributing nexlog as TypeScript files provides maximum flexibility for users. It allows for better tree-shaking, gives users full type information, and lets them compile the library according to their project's specific needs.
+
+### Why do I need to add 'use client' when using useLogger?
+
+The `useLogger` hook is a React hook, and hooks can only be used in client components. Adding 'use client' at the beginning of the file tells Next.js that this component should be rendered on the client side.
+
+### Why do I need to configure Next.js to transpile nexlog?
+
+nexlog is distributed as TypeScript files to provide maximum flexibility and type safety. However, Next.js doesn't automatically transpile dependencies. By adding nexlog to the `transpilePackages` array in your Next.js configuration, you ensure that the TypeScript files are properly compiled for use in your Next.js application.
+
+### I'm getting a "Module parse failed: Unexpected token" error. How do I fix it?
+
+This error typically occurs when Next.js is trying to parse the TypeScript files directly. To resolve this, make sure you've properly configured Next.js to transpile nexlog as described in the "Configuration with Next.js" section above.
+
+### The useLogger hook is not working. What might be the issue?
+
+If you're encountering issues with the `useLogger` hook, ensure that:
+1. You've wrapped your application with the `LoggerProvider` in your root layout.
+2. You're using 'use client' directive in the file where you're using `useLogger`.
+3. You've properly configured Next.js to transpile nexlog.
+
+If you're still having issues, please open an issue on the GitHub repository with details about your setup and the specific error you're encountering.

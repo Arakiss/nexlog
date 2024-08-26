@@ -1,6 +1,6 @@
 {
 	"name": "nexlog",
-	"version": "2.2.0",
+	"version": "2.2.1",
 	"description": "A simple and effective logging library for Next.js, compatible with server, browser, and edge environments.",
 	"type": "module",
 	"main": "./src/index.ts",
