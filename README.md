@@ -9,24 +9,13 @@ nexlog is a simple, effective, and zero-dependency logging library for Next.js, 
 ## Features
 
 - Environment-aware logging (Server, Browser, Edge)
-- Customizable log levels and environments
+- Customizable log levels
 - Colored console output for server environments
 - Full TypeScript support
 - Lightweight and easy to use
 - Zero external dependencies, leveraging Bun's all-in-one toolkit
 - No side effects
 - Built, tested, and bundled entirely with Bun
-
-## Why Bun?
-
-I've built nexlog using [Bun](https://bun.sh), an all-in-one JavaScript runtime & toolkit designed for speed. Bun provides:
-
-- Fast JavaScript/TypeScript runtime
-- Built-in bundler
-- Integrated test runner
-- Node.js-compatible package manager
-
-By leveraging Bun's comprehensive toolkit, I've been able to develop, test, run, and bundle nexlog without any external dependencies. This ensures a lightweight, fast, and reliable logging solution for your Next.js projects.
 
 ## Installation
 
@@ -43,9 +32,6 @@ bun add nexlog
 ```typescript
 import logger from 'nexlog';
 
-// Set configuration (optional)
-logger.setConfig({ level: 'info', enabledEnvironments: ['server', 'browser', 'edge'] });
-
 // Log messages
 logger.info('This is an info message');
 logger.warn('This is a warning', { additionalInfo: 'Some extra data' });
@@ -56,142 +42,130 @@ logger.error('An error occurred', { errorCode: 500 });
 
 Server environment:
 ```
-[2024-03-15T12:34:56.789Z] [INFO] This is an info message
-[2024-03-15T12:34:56.790Z] [WARN] This is a warning {"additionalInfo":"Some extra data"}
-[2024-03-15T12:34:56.791Z] [ERROR] An error occurred {"errorCode":500}
+[INFO] This is an info message
+[WARN] This is a warning {"additionalInfo":"Some extra data"}
+[ERROR] An error occurred {"errorCode":500}
 ```
 
 Browser/Edge environment:
 ```
-[2024-03-15T12:34:56.789Z] [INFO] This is an info message
-[2024-03-15T12:34:56.790Z] [WARN] This is a warning {"additionalInfo":"Some extra data"}
-[2024-03-15T12:34:56.791Z] [ERROR] An error occurred {"errorCode":500}
+[INFO] This is an info message
+[WARN] This is a warning {"additionalInfo":"Some extra data"}
+[ERROR] An error occurred {"errorCode":500}
 ```
 
 ## API
 
 ### Methods
 
-- `logger.trace(message: string | undefined, meta?: object)`
-- `logger.debug(message: string | undefined, meta?: object)`
-- `logger.info(message: string | undefined, meta?: object)`
-- `logger.warn(message: string | undefined, meta?: object)`
-- `logger.error(message: string | undefined, meta?: object)`
-- `logger.fatal(message: string | undefined, meta?: object)`
-- `logger.setConfig(config: Partial<NexlogConfig>)`
-- `logger.getConfig(): NexlogConfig`
-- `logger.resetConfig()`
-- `logger.initConfig()`: Loads configuration from a file (server-side only).
-- `logger.debugConfig()`: Outputs the current configuration for debugging purposes.
+- `logger.trace(msg: string, meta?: object)`
+- `logger.debug(msg: string, meta?: object)`
+- `logger.info(msg: string, meta?: object)`
+- `logger.warn(msg: string, meta?: object)`
+- `logger.error(msg: string, meta?: object)`
+- `logger.fatal(msg: string, meta?: object)`
+- `logger.setLevel(level: LogLevel)`
+- `logger.getLevel(): LogLevel`
+- `logger.enable()`
+- `logger.disable()`
+- `logger.isEnabled(): boolean`
+- `logger.setSSROnly(ssrOnly: boolean)`
 
-### Configuration
+### Types
 
 ```typescript
-interface NexlogConfig {
-  level: LogLevel;
-  enabledEnvironments: LogEnvironment[];
-}
-
 type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
-type LogEnvironment = "server" | "browser" | "edge";
+```
+
+## Configuration
+
+You can configure the logger using the following methods:
+
+```typescript
+// Set the log level
+logger.setLevel('debug');
+
+// Enable or disable logging
+logger.enable();
+logger.disable();
+
+// Set SSR-only mode
+logger.setSSROnly(true);
 ```
 
 ## Environment Detection
 
-nexlog automatically detects the current environment (server, browser, or edge) and adjusts its output accordingly. You can also manually set the environment or use helper functions for detection:
+nexlog automatically detects the current environment (server, browser, or edge) and adjusts its output accordingly. You can also use helper functions for detection:
 
 ```typescript
-import { setEnvironment, isServer, isNextEdgeRuntime } from 'nexlog';
+import { isServer, isNextEdgeRuntime } from 'nexlog';
 
 if (isServer) {
-  setEnvironment('server');
+  console.log('Running on server');
 } else if (isNextEdgeRuntime) {
-  setEnvironment('edge');
+  console.log('Running on edge runtime');
 } else {
-  setEnvironment('browser');
+  console.log('Running in browser');
 }
 ```
 
-## Integration with Next.js 14.x
+## Integration with Next.js
 
-To integrate `nexlog` with a Next.js 14.x application, follow these steps:
+nexlog provides a React provider for easy integration with Next.js applications. Here's how to use it:
 
-1. **Install the library:**
+1. Import the LoggerProvider in your root layout file (e.g., `app/layout.tsx`):
+```typescript
+import { LoggerProvider } from 'nexlog/react';
+```
 
-   ```bash
-   npm install nexlog
-   # or
-   yarn add nexlog
-   # or
-   bun add nexlog
-   ```
+2. Wrap your application with the LoggerProvider:
+```typescript
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <LoggerProvider
+          initialLevel={process.env.NODE_ENV === 'production' ? 'warn' : 'info'}
+          ssrOnly={process.env.NODE_ENV === 'production'}
+          disabled={process.env.NODE_ENV === 'test'}
+        >
+          {children}
+        </LoggerProvider>
+      </body>
+    </html>
+  );
+}
+```
 
-2. **Configure the logger:**
+The LoggerProvider accepts the following props:
+- `initialLevel`: Sets the initial log level (LogLevel type)
+- `ssrOnly`: When true, logs only on the server side (boolean)
+- `disabled`: When true, disables all logging (boolean)
 
-   Create a `nexlog.config.js` or `nexlog.config.ts` file in the root of your project to define your logger configuration:
+3. Use the logger in your components:
+```typescript
+import { useLogger } from 'nexlog/react';
 
-   ```javascript
-   // nexlog.config.js
-   module.exports = {
-     level: 'info',
-     enabledEnvironments: ['server', 'browser', 'edge'],
-   };
-   ```
+export default function MyComponent() {
+  const logger = useLogger();
+  
+  logger.info('MyComponent rendered');
+  
+  return <div>My Component</div>;
+}
+```
 
-3. **Initialize the logger in your Next.js application:**
-
-   You can initialize the logger in your `layout.tsx` file:
-
-   ```typescript
-   import type { Metadata } from "next";
-   import { Inter } from "next/font/google";
-   import "./globals.css";
-   import nexlog from 'nexlog';
-
-   const inter = Inter({ subsets: ["latin"] });
-
-   // Initialize the logger configuration
-   nexlog.initConfig().then(() => {
-     nexlog.info('Logger initialized');
-   });
-
-   export const metadata: Metadata = {
-     title: "Create Next App",
-     description: "Generated by create next app",
-   };
-
-   export default function RootLayout({
-     children,
-   }: Readonly<{
-     children: React.ReactNode;
-   }>) {
-     return (
-       <html lang="en">
-         <body className={inter.className}>{children}</body>
-       </html>
-     );
-   }
-   ```
-   
-4. **Use the logger throughout your application:**
-
-   You can now use `nexlog` in any part of your Next.js application:
-
-   ```typescript
-   import nexlog from 'nexlog';
-
-   export default function Home() {
-     nexlog.debug('Rendering Home component');
-
-     return <div>Welcome to Next.js!</div>;
-   }
-   ```
+This setup allows you to configure the logger globally and use it throughout your Next.js application with ease.
 
 ## Development
 
-I use Bun as the all-in-one toolkit for this project. Here's how you can get started:
+This project uses Bun as the all-in-one toolkit. Here's how you can get started:
 
-To install dependencies (although nexlog has none, this is for development purposes):
+To install dependencies:
 
 ```bash
 bun install
@@ -213,14 +187,6 @@ bun run build
 
 While I'm currently the sole developer of this project, I'm open to contributions. If you have suggestions or want to contribute, please feel free to open an issue or submit a pull request.
 
-## Roadmap
-
-Here's what I'm planning for future updates:
-
-- Add support for custom log formatters
-- Implement log rotation for file-based logging
-- Create plugins for popular frameworks and libraries
-
 ## License
 
 This project is licensed under the MIT License.
@@ -233,12 +199,12 @@ If you find nexlog helpful, consider [sponsoring me](https://github.com/sponsors
 
 ### Does nexlog have any external dependencies?
 
-No, I designed nexlog to be completely self-contained with zero external dependencies. By leveraging Bun's comprehensive toolkit, I've been able to develop, test, and bundle nexlog without relying on any third-party packages. This means you don't need to worry about compatibility issues or security vulnerabilities from external dependencies.
+No, nexlog is designed to be completely self-contained with zero external dependencies. By leveraging Bun's comprehensive toolkit, it's developed, tested, and bundled without relying on any third-party packages.
 
 ### Does nexlog have any side effects?
 
-No, I carefully designed nexlog to avoid any side effects. It doesn't modify global objects or interfere with other parts of your application. This makes it safe to use in any part of your Next.js project without worrying about unexpected behavior.
+No, nexlog is carefully designed to avoid any side effects. It doesn't modify global objects or interfere with other parts of your application.
 
-### Why did you choose to build nexlog with Bun?
+### Why was nexlog built with Bun?
 
-I chose Bun for its all-in-one approach to JavaScript/TypeScript development. Bun's integrated runtime, bundler, test runner, and package manager allowed me to create nexlog with zero external dependencies. This results in a faster, more lightweight, and more reliable logging solution for Next.js projects.
+nexlog was built with Bun for its all-in-one approach to JavaScript/TypeScript development. Bun's integrated runtime, bundler, test runner, and package manager allowed for the creation of nexlog with zero external dependencies, resulting in a faster, more lightweight, and more reliable logging solution for Next.js projects.

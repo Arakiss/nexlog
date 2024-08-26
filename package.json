@@ -1,22 +1,32 @@
 {
 	"name": "nexlog",
-	"version": "1.5.0",
+	"version": "2.0.0",
 	"description": "A simple and effective logging library for Next.js, compatible with server, browser, and edge environments.",
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
+	"react": "dist/react/LoggerProvider.js",
+	"exports": {
+		".": "./dist/index.js",
+		"./react": "./dist/react/LoggerProvider.js"
+	},
+	"files": ["dist"],
 	"type": "module",
 	"scripts": {
-		"build": "bun build index.ts --outdir dist",
-		"prepublishOnly": "bun build index.ts --outdir dist",
+		"build": "bun build src/index.ts --outdir dist && bun build react/LoggerProvider.tsx --outdir dist/react",
+		"prepublishOnly": "bun run build",
 		"test": "bun test"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
+		"react": "^18.2.0",
+		"@types/react": "^18.2.0",
+		"@types/react-dom": "^18.2.0",
 		"typescript": "^5.0.0"
 	},
 	"peerDependencies": {
-		"typescript": "^5.0.0"
+		"typescript": "^5.0.0",
+		"react": "^18.0.0"
 	},
 	"repository": {
 		"type": "git",
