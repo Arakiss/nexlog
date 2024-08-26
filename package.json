@@ -21,10 +21,10 @@
 		"test": "bun test",
 		"typecheck": "tsc --noEmit",
 		"build": "tsc",
-		"prepublishOnly": "npm run build",
+		"prepublishOnly": "bun run build",
 		"changeset": "changeset",
 		"version": "changeset version",
-		"publish": "changeset publish"
+		"release": "changeset publish"
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.27.7",
