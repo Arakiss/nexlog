@@ -18,6 +18,8 @@ jobs:
         with:
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
       - run: bun install
       - name: Create Release Pull Request or Publish to npm
         uses: changesets/action@v1
