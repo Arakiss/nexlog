@@ -1,11 +1,11 @@
 {
 	"name": "nexlog",
-	"version": "2.0.2",
+	"version": "2.0.3",
 	"description": "A simple and effective logging library for Next.js, compatible with server, browser, and edge environments.",
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
-	"react": "dist/react/LoggerProvider.js",
+	"react": "dist/react/logger-provider.js",
 	"sideEffects": false,
 	"exports": {
 		".": {
@@ -13,8 +13,8 @@
 			"types": "./dist/index.d.ts"
 		},
 		"./react": {
-			"import": "./dist/react/LoggerProvider.js",
-			"types": "./dist/react/LoggerProvider.d.ts"
+			"import": "./dist/react/logger-provider.js",
+			"types": "./dist/react/logger-provider.d.ts"
 		}
 	},
 	"files": ["dist"],

@@ -38,6 +38,8 @@ logger.warn('This is a warning', { additionalInfo: 'Some extra data' });
 logger.error('An error occurred', { errorCode: 500 });
 ```
 
+Note: The default export is an instance of the ConfigurableLogger class, pre-configured for the detected environment.
+
 ### Output Example
 
 Server environment:
