@@ -19,10 +19,28 @@ jobs:
       with:
         bun-version: latest
     - run: bun install
+    - run: bun run typecheck
     - run: bun test
 
-  publish:
+  build:
     needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+    - run: bun install
+    - run: bun run build
+    - uses: actions/upload-artifact@v3
+      with:
+        name: dist
+        path: dist
+
+  publish:
+    needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     steps:
@@ -32,11 +50,10 @@ jobs:
       with:
         node-version: '20.x'
         registry-url: 'https://registry.npmjs.org'
-    - name: Use Bun
-      uses: oven-sh/setup-bun@v1
+    - uses: actions/download-artifact@v3
       with:
-        bun-version: latest
-    - run: bun install
+        name: dist
+        path: dist
     - name: Publish to npm
       run: npm publish
       env:
