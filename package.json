@@ -1,6 +1,6 @@
 {
 	"name": "nexlog",
-	"version": "3.0.3",
+	"version": "3.1.0",
 	"description": "A simple and effective logging library for Next.js, compatible with server, browser, and edge environments.",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -15,7 +15,9 @@
 			"types": "./dist/react/logger-provider.d.ts"
 		}
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"sideEffects": false,
 	"scripts": {
 		"test": "bun test",
