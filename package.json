@@ -1,6 +1,6 @@
 {
 	"name": "nexlog",
-	"version": "2.2.1",
+	"version": "2.2.2",
 	"description": "A simple and effective logging library for Next.js, compatible with server, browser, and edge environments.",
 	"type": "module",
 	"main": "./src/index.ts",
@@ -15,7 +15,9 @@
 			"types": "./src/react/logger-provider.tsx"
 		}
 	},
-	"files": ["src"],
+	"files": [
+		"src"
+	],
 	"sideEffects": false,
 	"scripts": {
 		"test": "bun test"
@@ -30,7 +32,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Arakiss/nexlog.git"
+		"url": "git+https://github.com/Arakiss/nexlog.git"
 	},
 	"bugs": {
 		"url": "https://github.com/Arakiss/nexlog/issues"
