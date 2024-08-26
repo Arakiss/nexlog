@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { createContext, useContext, useEffect } from "react";
-import logger, { type LogLevel } from "..";
+import logger, { type LogLevel } from "../index.js";
 
 const LoggerContext = createContext<typeof logger | null>(null);
 

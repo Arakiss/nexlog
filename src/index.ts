@@ -62,7 +62,11 @@ class EdgeLogger implements LoggerStrategy {
 
 const isServer = typeof window === "undefined";
 const isNextEdgeRuntime =
-	typeof process !== "undefined" && process.env.NEXT_RUNTIME === "edge";
+	typeof globalThis !== "undefined" &&
+	// @ts-ignore
+	typeof globalThis.process !== "undefined" &&
+	// @ts-ignore
+	globalThis.process.env?.NEXT_RUNTIME === "edge";
 
 const loggerStrategies: Record<string, LoggerStrategy> = {
 	server: new ServerLogger(),
@@ -70,10 +74,9 @@ const loggerStrategies: Record<string, LoggerStrategy> = {
 	browser: new BrowserLogger(),
 };
 
-const getEnvironment = (): string => {
-	if (typeof window === "undefined") return "server";
-	if (typeof process !== "undefined" && process.env.NEXT_RUNTIME === "edge")
-		return "edge";
+const getEnvironment = (): "server" | "edge" | "browser" => {
+	if (isServer) return "server";
+	if (isNextEdgeRuntime) return "edge";
 	return "browser";
 };
 
@@ -160,10 +163,18 @@ class ConfigurableLogger {
 	}
 }
 
+const defaultStrategy = loggerStrategies.browser;
+const selectedStrategy = loggerStrategies[getEnvironment()] ?? defaultStrategy;
+
+// Ensure safeSelectedStrategy is always of type LoggerStrategy
+const safeSelectedStrategy: LoggerStrategy = selectedStrategy as LoggerStrategy;
+
 const logger = new ConfigurableLogger(
-	loggerStrategies[getEnvironment()],
-	process.env.NODE_ENV === "production" ? "warn" : "debug",
-	process.env.NODE_ENV !== "test",
+	safeSelectedStrategy,
+	// @ts-ignore
+	globalThis.process?.env?.NODE_ENV === "production" ? "warn" : "debug",
+	// @ts-ignore
+	globalThis.process?.env?.NODE_ENV !== "test",
 	false, // default to not SSR-only
 );
 

@@ -1,16 +1,26 @@
 {
 	"compilerOptions": {
-		"target": "ESNext",
-		"module": "ESNext",
-		"moduleResolution": "node",
-		"lib": ["ESNext", "DOM"],
-		"jsx": "react-jsx",
-		"strict": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
+		"target": "es2022",
+		"allowJs": true,
+		"resolveJsonModule": true,
+		"moduleDetection": "force",
+		"isolatedModules": true,
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"jsx": "react-jsx",
+		"lib": ["ESNext", "DOM"],
+		"types": ["node"],
+		"declaration": true,
+		"declarationMap": false,
+		"outDir": "./dist",
 		"forceConsistentCasingInFileNames": true,
-		"declaration": true
+		"allowSyntheticDefaultImports": true
 	},
 	"include": ["src/**/*"],
-	"exclude": ["node_modules", "dist"]
+	"exclude": ["node_modules", "**/*.test.ts"]
 }
