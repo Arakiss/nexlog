@@ -1,6 +1,6 @@
 # nexlog
 
-nexlog is a simple, effective, and zero-dependency logging library for Next.js, compatible with server, browser, and edge environments. Built entirely with Bun.
+nexlog is a simple, effective, and zero-dependency logging library for Next.js, compatible with server, browser, and edge environments. It's distributed as TypeScript files for maximum flexibility and type safety.
 
 ![CI/CD](https://github.com/Arakiss/nexlog/actions/workflows/ci-cd.yml/badge.svg)
 ![npm version](https://img.shields.io/npm/v/nexlog.svg)
@@ -13,9 +13,9 @@ nexlog is a simple, effective, and zero-dependency logging library for Next.js, 
 - Colored console output for server environments
 - Full TypeScript support
 - Lightweight and easy to use
-- Zero external dependencies, leveraging Bun's all-in-one toolkit
+- Zero external dependencies
 - No side effects
-- Built, tested, and bundled entirely with Bun
+- Distributed as TypeScript files for maximum flexibility
 
 ## Installation
 
@@ -165,24 +165,24 @@ This setup allows you to configure the logger globally and use it throughout you
 
 ## Development
 
-This project uses Bun as the all-in-one toolkit. Here's how you can get started:
-
 To install dependencies:
 
 ```bash
+npm install
+# or
+yarn install
+# or
 bun install
 ```
 
 To run tests:
 
 ```bash
+npm test
+# or
+yarn test
+# or
 bun test
-```
-
-To build the project:
-
-```bash
-bun run build
 ```
 
 ## Contributing
@@ -201,12 +201,12 @@ If you find nexlog helpful, consider [sponsoring me](https://github.com/sponsors
 
 ### Does nexlog have any external dependencies?
 
-No, nexlog is designed to be completely self-contained with zero external dependencies. By leveraging Bun's comprehensive toolkit, it's developed, tested, and bundled without relying on any third-party packages.
+No, nexlog is designed to be completely self-contained with zero external dependencies.
 
 ### Does nexlog have any side effects?
 
 No, nexlog is carefully designed to avoid any side effects. It doesn't modify global objects or interfere with other parts of your application.
 
-### Why was nexlog built with Bun?
+### Why is nexlog distributed as TypeScript files?
 
-nexlog was built with Bun for its all-in-one approach to JavaScript/TypeScript development. Bun's integrated runtime, bundler, test runner, and package manager allowed for the creation of nexlog with zero external dependencies, resulting in a faster, more lightweight, and more reliable logging solution for Next.js projects.
+Distributing nexlog as TypeScript files provides maximum flexibility for users. It allows for better tree-shaking, gives users full type information, and lets them compile the library according to their project's specific needs.

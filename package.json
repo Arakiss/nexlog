@@ -1,34 +1,27 @@
 {
 	"name": "nexlog",
-	"version": "2.0.4",
+	"version": "2.1.0",
 	"description": "A simple and effective logging library for Next.js, compatible with server, browser, and edge environments.",
-	"main": "dist/index.js",
-	"module": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"react": "dist/react/logger-provider.js",
-	"sideEffects": false,
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
 	"exports": {
 		".": {
-			"import": "./dist/index.js",
-			"types": "./dist/index.d.ts"
+			"import": "./src/index.ts",
+			"types": "./src/index.ts"
 		},
 		"./react": {
-			"import": "./dist/react/logger-provider.js",
-			"types": "./dist/react/logger-provider.d.ts"
+			"import": "./src/react/logger-provider.tsx",
+			"types": "./src/react/logger-provider.tsx"
 		}
 	},
-	"files": ["dist"],
-	"type": "module",
+	"files": ["src"],
+	"sideEffects": false,
 	"scripts": {
-		"build": "bun build src/index.ts --outdir dist --format esm && bun build src/react/logger-provider.tsx --outdir dist/react --format esm --config tsconfig.react.json && tsc",
-		"prepublishOnly": "bun run build",
 		"test": "bun test"
 	},
 	"devDependencies": {
-		"@types/bun": "latest",
-		"react": "^18.2.0",
 		"@types/react": "^18.2.0",
-		"@types/react-dom": "^18.2.0",
 		"typescript": "^5.0.0"
 	},
 	"peerDependencies": {
