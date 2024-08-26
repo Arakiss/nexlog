@@ -21,7 +21,8 @@
 		"test": "bun test",
 		"typecheck": "tsc --noEmit",
 		"build": "tsc",
-		"prepublishOnly": "bun run build",
+		"ci": "bun run typecheck && bun test && bun run build",
+		"prepublishOnly": "bun run ci",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"release": "changeset publish"
@@ -62,5 +63,8 @@
 	"funding": {
 		"type": "github",
 		"url": "https://github.com/sponsors/Arakiss"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }
