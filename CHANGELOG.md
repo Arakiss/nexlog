@@ -1,5 +1,108 @@
 # nexlog
 
+## 5.2.0
+
+### Minor Changes
+
+- # 🚀 nexlog v5.2.0 - Advanced Enterprise Features
+
+  Major release implementing comprehensive enterprise-grade logging features based on real production feedback from the Orvian project.
+
+  ## 🎯 P0 Critical Features
+
+  ### Enhanced Edge Runtime Detection
+
+  - Auto-detects Vercel Edge Runtime, Cloudflare Workers, and Deno Deploy
+  - Comprehensive environment capability detection
+  - Fixes critical compatibility issues with Next.js middleware
+
+  ### Distributed Tracing & Correlation IDs
+
+  - Full correlation context management with request/trace/span IDs
+  - Automatic context persistence across async operations
+  - W3C Trace Context header support
+  - Express/Koa middleware integration
+
+  ### Smart Module Detection
+
+  - Auto-extracts module names from stack traces for child loggers
+  - Proper handling of module objects vs strings
+  - Fixes [object Object] display issues
+
+  ## ✨ P1 Advanced Features
+
+  ### New `logger.success()` Method
+
+  - Dedicated success log level with bright green styling
+  - Proper console method mapping and level prioritization
+  - Complete type safety integration
+
+  ### Pretty Print Development Mode
+
+  - Beautiful console output with emoji indicators 🎨
+  - Relative timestamps and collapsible metadata groups
+  - Color-coded log levels and structured object display
+  - Automatic activation in development environments
+
+  ### Advanced Sampling & Rate Limiting
+
+  - Per-level sampling configuration (trace: 0.1, debug: 0.5, etc.)
+  - Per-message rate limiting with `_rateLimit: "10/minute"` metadata
+  - Token bucket algorithm implementation
+  - Configurable strategies: "5/second", "100/hour"
+
+  ### Structured Error Serialization
+
+  - Complete Error object serialization with cause chains
+  - Stack trace parsing into structured format
+  - Custom error property extraction (code, statusCode, etc.)
+  - Circular reference and depth protection
+
+  ## 🔧 Technical Improvements
+
+  ### Enhanced Data Sanitization
+
+  - Auto-detection of sensitive fields (password, token, apiKey, etc.)
+  - Built-in patterns for email masking, credit card redaction
+  - Configurable sanitization rules and custom patterns
+  - GDPR compliance features
+
+  ### Memory Management
+
+  - Circular buffer implementation prevents memory leaks
+  - Configurable overflow strategies: drop-oldest, drop-newest, block
+  - Buffer statistics and monitoring
+
+  ### Pretty Formatter
+
+  - Configurable timestamp formats: ISO, relative, none
+  - Emoji log level indicators: ✅ SUCCESS, ❌ ERROR, ⚠️ WARN
+  - Grouped metadata with collapsible console groups
+  - CSS-styled console output for browsers
+
+  ## 🏗️ Architecture Enhancements
+
+  - **Full TypeScript Support**: Strict typing throughout
+  - **Conditional Exports**: Optimized bundles for edge/node/browser
+  - **Plugin System Ready**: Extensible architecture for custom functionality
+  - **Backward Compatibility**: All existing APIs preserved
+
+  ## 📊 Performance & Monitoring
+
+  - Advanced sampling prevents log flooding in production
+  - Rate limiting with configurable time windows
+  - Real-time statistics and metrics collection
+  - Buffer utilization monitoring
+
+  ## 🔒 Security & Compliance
+
+  - Automatic PII detection and masking
+  - Configurable field redaction patterns
+  - Safe serialization with circular reference protection
+  - GDPR-ready data sanitization
+
+  This release transforms nexlog into a production-ready enterprise logging solution while maintaining its simplicity and modern approach. Perfect for Next.js applications requiring sophisticated logging capabilities.
+
 ## 5.1.0
 
 ### Minor Changes
