@@ -457,14 +457,24 @@ export class Logger implements ILogger {
 		}
 
 		// Add performance metrics if enabled and available
+		// Only add memory usage if we're in a Node.js environment with memory API
 		if (
-			(envConfig.performance || process?.env?.NODE_ENV === "development") &&
-			HAS_MEMORY_USAGE
+			envConfig.performance &&
+			HAS_MEMORY_USAGE &&
+			typeof process !== "undefined" &&
+			typeof process.memoryUsage === "function"
 		) {
-			entry.performance = {
-				memory: process.memoryUsage(),
-				timestamp: performance.now() - this.startTime,
-			};
+			try {
+				entry.performance = {
+					memory: process.memoryUsage(),
+					timestamp: performance.now() - this.startTime,
+				};
+			} catch {
+				// Fallback if memoryUsage fails
+				entry.performance = {
+					timestamp: performance.now() - this.startTime,
+				};
+			}
 		} else {
 			entry.performance = {
 				timestamp: performance.now() - this.startTime,
