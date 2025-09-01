@@ -59,7 +59,6 @@
 		"format": "biome format --write .",
 		"check": "biome check .",
 		"ci": "bun run check && bun run typecheck && bun test && bun run build",
-		"prepublishOnly": "bun run ci",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"release": "changeset publish",
