@@ -7,6 +7,7 @@
 import { configManager } from "./config.js";
 import { COLORS, DEFAULTS, LEVEL_COLORS, LOG_LEVELS } from "./constants.js";
 import { contextManager } from "./context/index.js";
+import { correlationManager, type CorrelationContext } from "./correlation/index.js";
 import {
 	CAPABILITIES,
 	detectRuntime,
@@ -24,14 +25,20 @@ import type {
 	Transport,
 } from "./types.js";
 import { CircularBuffer } from "./utils/circular-buffer.js";
+import { ErrorSerializer } from "./utils/error-serializer.js";
+import { PrettyFormatter, type PrettyPrintOptions } from "./formatters/pretty.js";
 
 export * from "./constants.js";
 export * from "./context/index.js";
+export * from "./correlation/index.js";
+export * from "./formatters/pretty.js";
 export * from "./runtime/detector.js";
 export * from "./sanitizer/index.js";
 // Re-export types and utilities
 export * from "./types.js";
 export * from "./utils/circular-buffer.js";
+export * from "./utils/error-serializer.js";
+export * from "./utils/rate-limiter.js";
 
 /**
  * Configuration options for the logger
@@ -51,6 +58,8 @@ export interface LoggerConfig {
 	sanitize?: boolean;
 	sanitizeOptions?: any;
 	maskFields?: string[];
+	prettyPrint?: boolean | PrettyPrintOptions;
+	correlationContext?: CorrelationContext;
 }
 
 /**
@@ -134,6 +143,7 @@ export class ConsoleTransport implements Transport {
 			case "debug":
 				return "debug";
 			case "info":
+			case "success":
 				return "info";
 			case "warn":
 				return "warn";
@@ -231,6 +241,7 @@ export class Logger implements ILogger {
 	private readonly environment: RuntimeEnvironment;
 	private readonly buffer: CircularBuffer<LogEntry>;
 	private readonly sanitizer?: Sanitizer;
+	private readonly prettyFormatter?: PrettyFormatter;
 
 	constructor(config?: LoggerConfig) {
 		this.environment = detectRuntime();
@@ -256,7 +267,9 @@ export class Logger implements ILogger {
 			sanitize: config?.sanitize ?? true,
 			sanitizeOptions: config?.sanitizeOptions ?? {},
 			maskFields: config?.maskFields ?? [],
-		};
+			prettyPrint: config?.prettyPrint ?? (envConfig.devTools && !envConfig.structured),
+			correlationContext: config?.correlationContext ?? {},
+		} as Required<LoggerConfig>;
 
 		this.transports = this.config.transports;
 		this.buffer = new CircularBuffer({
@@ -279,6 +292,19 @@ export class Logger implements ILogger {
 			});
 		}
 
+		// Initialize pretty formatter if enabled
+		if (this.config.prettyPrint) {
+			const prettyOptions = typeof this.config.prettyPrint === "object" 
+				? this.config.prettyPrint 
+				: { colors: this.environment === "node" || this.environment === "bun" };
+			this.prettyFormatter = new PrettyFormatter(prettyOptions);
+		}
+
+		// Set correlation context if provided
+		if (Object.keys(this.config.correlationContext).length > 0) {
+			correlationManager.setContext(this.config.correlationContext);
+		}
+
 		// Debug output if configured
 		if (envConfig.debug) {
 			console.log("[nexlog] Logger initialized with config:", this.config);
@@ -288,10 +314,26 @@ export class Logger implements ILogger {
 	/**
 	 * Creates a child logger with inherited configuration
 	 */
-	child(namespace: string, config?: Partial<LoggerConfig>): Logger {
+	child(namespace: string | { module?: string } | undefined, config?: Partial<LoggerConfig>): Logger {
+		// Handle module object or auto-detect from stack
+		let finalNamespace: string;
+		
+		if (!namespace) {
+			// Auto-detect module from stack
+			finalNamespace = this.extractModuleFromStack();
+		} else if (typeof namespace === "object" && namespace.module) {
+			// Handle { module: "name" } format
+			finalNamespace = namespace.module;
+		} else if (typeof namespace === "string") {
+			finalNamespace = namespace;
+		} else {
+			// Fallback for any other type
+			finalNamespace = String(namespace);
+		}
+
 		const childNamespace = this.config.namespace
-			? `${this.config.namespace}:${namespace}`
-			: namespace;
+			? `${this.config.namespace}:${finalNamespace}`
+			: finalNamespace;
 
 		const cached = this.children.get(childNamespace);
 		if (cached) return cached;
@@ -308,6 +350,40 @@ export class Logger implements ILogger {
 
 		this.children.set(childNamespace, child);
 		return child;
+	}
+
+	/**
+	 * Extract module name from stack trace
+	 */
+	private extractModuleFromStack(): string {
+		const error = new Error();
+		const stack = error.stack;
+		
+		if (!stack) return "unknown";
+		
+		const lines = stack.split("\n");
+		// Skip first 3 lines (Error message, this function, child function)
+		for (let i = 3; i < lines.length && i < 6; i++) {
+			const line = lines[i];
+			if (!line) continue;
+			
+			// Extract filename from stack trace
+			const match = line.match(/\(([^)]+)\)/);
+			if (match && match[1]) {
+				const path = match[1];
+				// Extract just the filename without extension
+				const parts = path.split("/");
+				const filename = parts[parts.length - 1];
+				if (filename) {
+					const nameWithoutExt = filename.replace(/\.(ts|js|tsx|jsx).*$/, "");
+					if (nameWithoutExt && nameWithoutExt !== "index") {
+						return nameWithoutExt;
+					}
+				}
+			}
+		}
+		
+		return "unknown";
 	}
 
 	/**
@@ -426,10 +502,27 @@ export class Logger implements ILogger {
 		// Get context from context manager
 		const managedContext = contextManager.get();
 
+		// Get correlation context
+		const correlationContext = correlationManager.getContext();
+
+		// Serialize errors if present in metadata and extract stack trace
+		let processedMetadata = metadata;
+		let errorStack: string | undefined;
+		if (metadata && this.containsError(metadata)) {
+			// Extract stack from first error for backward compatibility
+			for (const value of Object.values(metadata)) {
+				if (value instanceof Error && value.stack) {
+					errorStack = value.stack;
+					break;
+				}
+			}
+			processedMetadata = this.serializeErrors(metadata);
+		}
+
 		// Sanitize metadata if enabled
-		let sanitizedMetadata = metadata;
-		if (this.sanitizer && metadata) {
-			sanitizedMetadata = this.sanitizer.sanitizeValue(metadata) as LogMetadata;
+		let sanitizedMetadata = processedMetadata;
+		if (this.sanitizer && processedMetadata) {
+			sanitizedMetadata = this.sanitizer.sanitizeValue(processedMetadata) as LogMetadata;
 		}
 
 		// Build log entry
@@ -442,18 +535,19 @@ export class Logger implements ILogger {
 			context: {
 				...this.config.context,
 				...managedContext,
+				...correlationContext,
 			},
 			environment: this.environment,
 		};
 
 		// Extract stack trace for errors (if enabled)
 		const envConfig = configManager.getConfig();
-		if (
-			metadata &&
-			metadata.error instanceof Error &&
-			envConfig.stackTraces !== false
-		) {
-			entry.stack = metadata.error.stack;
+		if (envConfig.stackTraces !== false) {
+			if (errorStack) {
+				entry.stack = errorStack;
+			} else if (metadata && metadata.error instanceof Error) {
+				entry.stack = metadata.error.stack;
+			}
 		}
 
 		// Add performance metrics if enabled and available
@@ -555,6 +649,13 @@ export class Logger implements ILogger {
 	 */
 	info(message: string, metadata?: LogMetadata): void {
 		this.log("info", message, metadata);
+	}
+
+	/**
+	 * Logs a success message
+	 */
+	success(message: string, metadata?: LogMetadata): void {
+		this.log("success", message, metadata);
 	}
 
 	/**
@@ -672,6 +773,60 @@ export class Logger implements ILogger {
 	getRecentLogs(count?: number): LogEntry[] {
 		const logs = this.buffer.toArray();
 		return count ? logs.slice(-count) : logs;
+	}
+
+	/**
+	 * Set correlation context for this logger instance
+	 */
+	setCorrelationContext(context: CorrelationContext): void {
+		this.config.correlationContext = { ...this.config.correlationContext, ...context };
+		correlationManager.setContext(this.config.correlationContext);
+	}
+
+	/**
+	 * Get current correlation context
+	 */
+	getCorrelationContext(): CorrelationContext {
+		return correlationManager.getContext();
+	}
+
+	/**
+	 * Create logger with correlation context
+	 */
+	withCorrelation(context: CorrelationContext): Logger {
+		return new Logger({
+			...this.config,
+			correlationContext: { ...this.config.correlationContext, ...context },
+		});
+	}
+
+	/**
+	 * Check if metadata contains error objects
+	 */
+	private containsError(metadata: LogMetadata): boolean {
+		for (const value of Object.values(metadata)) {
+			if (value instanceof Error || (typeof value === "object" && value !== null && "message" in value)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Serialize error objects in metadata
+	 */
+	private serializeErrors(metadata: LogMetadata): LogMetadata {
+		const serialized: LogMetadata = {};
+		
+		for (const [key, value] of Object.entries(metadata)) {
+			if (value instanceof Error || (typeof value === "object" && value !== null && "message" in value)) {
+				serialized[key] = ErrorSerializer.serialize(value);
+			} else {
+				serialized[key] = value;
+			}
+		}
+		
+		return serialized;
 	}
 
 	/**

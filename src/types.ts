@@ -5,7 +5,7 @@
 /**
  * Available log levels from least to most severe
  */
-export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+export type LogLevel = "trace" | "debug" | "info" | "success" | "warn" | "error" | "fatal";
 
 /**
  * Runtime environment types
@@ -111,6 +111,7 @@ export const LogLevels = {
 	TRACE: "trace",
 	DEBUG: "debug",
 	INFO: "info",
+	SUCCESS: "success",
 	WARN: "warn",
 	ERROR: "error",
 	FATAL: "fatal",
@@ -125,6 +126,7 @@ export interface ILogger {
 	trace(message: string, metadata?: LogMetadata): void;
 	debug(message: string, metadata?: LogMetadata): void;
 	info(message: string, metadata?: LogMetadata): void;
+	success(message: string, metadata?: LogMetadata): void;
 	warn(message: string, metadata?: LogMetadata): void;
 	error(message: string, metadata?: LogMetadata): void;
 	fatal(message: string, metadata?: LogMetadata): void;

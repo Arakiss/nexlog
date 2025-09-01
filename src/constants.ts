@@ -11,9 +11,10 @@ export const LOG_LEVELS: Record<LogLevel, number> = {
 	trace: 0,
 	debug: 1,
 	info: 2,
-	warn: 3,
-	error: 4,
-	fatal: 5,
+	success: 3,
+	warn: 4,
+	error: 5,
+	fatal: 6,
 } as const;
 
 /**
@@ -40,6 +41,7 @@ export const LEVEL_COLORS: Record<LogLevel, string> = {
 	trace: COLORS.gray,
 	debug: COLORS.cyan,
 	info: COLORS.green,
+	success: `${COLORS.bright}${COLORS.green}`,
 	warn: COLORS.yellow,
 	error: COLORS.red,
 	fatal: `${COLORS.bright}${COLORS.red}`,

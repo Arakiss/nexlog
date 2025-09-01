@@ -34,23 +34,28 @@ export function detectRuntime(): RuntimeEnvironment {
 		return "bun";
 	}
 
-	// Check for Edge Runtime (Vercel, Cloudflare Workers, etc.)
-	if (typeof globalThis !== "undefined") {
+	// Enhanced Edge Runtime detection
+	const isEdgeRuntime = 
 		// Vercel Edge Runtime
-		if ((globalThis as any).EdgeRuntime) {
-			return "edge";
-		}
+		(typeof (globalThis as any).EdgeRuntime !== "undefined") ||
+		// Next.js Edge Runtime
+		(typeof process !== "undefined" && process.env?.NEXT_RUNTIME === "edge") ||
 		// Cloudflare Workers
-		if (
-			(globalThis as any).caches &&
-			typeof (globalThis as any).Request !== "undefined"
-		) {
-			return "edge";
-		}
-	}
+		(typeof (globalThis as any).caches !== "undefined" && 
+		 typeof (globalThis as any).Request !== "undefined" &&
+		 typeof (globalThis as any).Response !== "undefined" &&
+		 !globalThis.window) ||
+		// Deno Deploy
+		(typeof (globalThis as any).Deno !== "undefined" && 
+		 (globalThis as any).Deno.env?.get("DENO_DEPLOYMENT_ID")) ||
+		// Auto-detect: No Node.js APIs available
+		(typeof globalThis !== "undefined" && 
+		 !globalThis.process?.versions?.node &&
+		 typeof globalThis.fetch !== "undefined" &&
+		 typeof globalThis.crypto !== "undefined" &&
+		 typeof globalThis.TextEncoder !== "undefined");
 
-	// Check for Next.js Edge Runtime via process.env
-	if (typeof process !== "undefined" && process.env?.NEXT_RUNTIME === "edge") {
+	if (isEdgeRuntime) {
 		return "edge";
 	}
 
