@@ -6,9 +6,9 @@
 export * from "./constants.js";
 export {
 	ContextBuilder,
+	type ContextManager,
 	context,
 	contextManager,
-	type IContextManager,
 	type LogContext,
 	nextContextMiddleware,
 	withContext,

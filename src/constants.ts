@@ -51,13 +51,13 @@ export const LEVEL_COLORS: Record<LogLevel, string> = {
  * Default configuration values
  */
 export const DEFAULTS = {
-	LOG_LEVEL: "info" as LogLevel,
-	BATCH_SIZE: 100,
-	FLUSH_INTERVAL: 1000,
-	BUFFER_SIZE: 1000,
-	SAMPLING_RATE: 1,
-	MAX_DEPTH: 10,
-	CIRCULAR_BUFFER_SIZE: 5000,
+	logLevel: "info" as LogLevel,
+	batchSize: 100,
+	flushInterval: 1000,
+	bufferSize: 1000,
+	samplingRate: 1,
+	maxDepth: 10,
+	circularBufferSize: 5000,
 } as const;
 
 /**
@@ -69,9 +69,9 @@ export const ENV_PREFIX = "NEXLOG_" as const;
  * Transport names
  */
 export const TRANSPORT_NAMES = {
-	CONSOLE: "console",
-	EDGE_CONSOLE: "edge-console",
-	BATCHED: "batched",
-	HTTP: "http",
-	FILE: "file",
+	console: "console",
+	edgeConsole: "edge-console",
+	batched: "batched",
+	http: "http",
+	file: "file",
 } as const;

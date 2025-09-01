@@ -44,7 +44,6 @@ const LEVEL_LABELS: Record<LogLevel, string> = {
 };
 
 export class PrettyFormatter {
-	private startTime = Date.now();
 	private options: Required<PrettyPrintOptions>;
 
 	constructor(options: PrettyPrintOptions = {}) {
@@ -103,10 +102,8 @@ export class PrettyFormatter {
 		// Log stack trace if present
 		if (entry.stack) {
 			console[method](
-				this.options.colors
-					? `%c${entry.stack}`
-					: entry.stack,
-				this.options.colors ? `color: ${COLORS.dim}` : ""
+				this.options.colors ? `%c${entry.stack}` : entry.stack,
+				this.options.colors ? `color: ${COLORS.dim}` : "",
 			);
 		}
 	}
@@ -156,22 +153,23 @@ export class PrettyFormatter {
 		return this.colorize(`[${namespace}]`, COLORS.cyan);
 	}
 
-	private logMetadata(metadata: any, method: "log" | "info" | "warn" | "error" | "debug"): void {
-		if (this.options.groupCollapsed && typeof console.groupCollapsed === "function") {
-			console.groupCollapsed(
-				this.colorize("📦 Metadata", COLORS.dim)
-			);
+	private logMetadata(
+		metadata: unknown,
+		method: "log" | "info" | "warn" | "error" | "debug",
+	): void {
+		if (
+			this.options.groupCollapsed &&
+			typeof console.groupCollapsed === "function"
+		) {
+			console.groupCollapsed(this.colorize("📦 Metadata", COLORS.dim));
 			this.prettyPrintObject(metadata, 0);
 			console.groupEnd();
 		} else {
-			console[method](
-				this.colorize("├─ Metadata:", COLORS.dim),
-				metadata
-			);
+			console[method](this.colorize("├─ Metadata:", COLORS.dim), metadata);
 		}
 	}
 
-	private prettyPrintObject(obj: any, depth: number): void {
+	private prettyPrintObject(obj: unknown, depth: number): void {
 		if (depth >= this.options.maxDepth) {
 			console.log(this.colorize("[Max Depth Reached]", COLORS.dim));
 			return;
@@ -196,7 +194,9 @@ export class PrettyFormatter {
 						this.prettyPrintObject(value, depth + 1);
 					} else {
 						const formattedValue = this.formatValue(value);
-						console.log(`${indent}${this.colorize(key, COLORS.blue)}: ${formattedValue}`);
+						console.log(
+							`${indent}${this.colorize(key, COLORS.blue)}: ${formattedValue}`,
+						);
 					}
 				}
 			}
@@ -235,7 +235,8 @@ export class PrettyFormatter {
 			[COLORS.gray]: "color: gray",
 			[COLORS.cyan]: "color: cyan",
 			[COLORS.green]: "color: green",
-			[`${COLORS.bright}${COLORS.green}`]: "color: limegreen; font-weight: bold",
+			[`${COLORS.bright}${COLORS.green}`]:
+				"color: limegreen; font-weight: bold",
 			[COLORS.yellow]: "color: orange",
 			[COLORS.red]: "color: red",
 			[`${COLORS.bright}${COLORS.red}`]: "color: red; font-weight: bold",
@@ -243,7 +244,9 @@ export class PrettyFormatter {
 		return cssColors[color] || "color: inherit";
 	}
 
-	private getConsoleMethod(level: LogLevel): "log" | "info" | "warn" | "error" | "debug" {
+	private getConsoleMethod(
+		level: LogLevel,
+	): "log" | "info" | "warn" | "error" | "debug" {
 		switch (level) {
 			case "trace":
 			case "debug":

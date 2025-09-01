@@ -3,8 +3,6 @@
  * Tracks requests across distributed systems
  */
 
-import { randomUUID } from "crypto";
-
 /**
  * Correlation context for distributed tracing
  */
@@ -85,7 +83,7 @@ export class CorrelationManager {
 			const buffer = new Uint8Array(16);
 			crypto.getRandomValues(buffer);
 			return Array.from(buffer)
-				.map(b => b.toString(16).padStart(2, "0"))
+				.map((b) => b.toString(16).padStart(2, "0"))
 				.join("");
 		}
 		// Fallback
@@ -101,7 +99,7 @@ export class CorrelationManager {
 			const buffer = new Uint8Array(8);
 			crypto.getRandomValues(buffer);
 			return Array.from(buffer)
-				.map(b => b.toString(16).padStart(2, "0"))
+				.map((b) => b.toString(16).padStart(2, "0"))
 				.join("");
 		}
 		// Fallback
@@ -135,7 +133,7 @@ export class CorrelationManager {
 	createChildSpan(): CorrelationContext {
 		const parentSpanId = this.context.spanId;
 		const spanId = this.generateSpanId();
-		
+
 		return {
 			...this.context,
 			parentSpanId,
@@ -146,21 +144,26 @@ export class CorrelationManager {
 	/**
 	 * Extract correlation IDs from HTTP headers
 	 */
-	extractFromHeaders(headers: Record<string, string | string[] | undefined>): CorrelationContext {
+	extractFromHeaders(
+		headers: Record<string, string | string[] | undefined>,
+	): CorrelationContext {
 		const context: CorrelationContext = {};
 
 		// Standard headers
 		const requestId = headers["x-request-id"] || headers["x-correlation-id"];
-		const traceId = headers["x-trace-id"] || headers["traceparent"];
+		const traceId = headers["x-trace-id"] || headers.traceparent;
 		const spanId = headers["x-span-id"];
 		const userId = headers["x-user-id"];
 		const sessionId = headers["x-session-id"];
 
-		if (requestId) context.requestId = Array.isArray(requestId) ? requestId[0] : requestId;
-		if (traceId) context.traceId = Array.isArray(traceId) ? traceId[0] : traceId;
+		if (requestId)
+			context.requestId = Array.isArray(requestId) ? requestId[0] : requestId;
+		if (traceId)
+			context.traceId = Array.isArray(traceId) ? traceId[0] : traceId;
 		if (spanId) context.spanId = Array.isArray(spanId) ? spanId[0] : spanId;
 		if (userId) context.userId = Array.isArray(userId) ? userId[0] : userId;
-		if (sessionId) context.sessionId = Array.isArray(sessionId) ? sessionId[0] : sessionId;
+		if (sessionId)
+			context.sessionId = Array.isArray(sessionId) ? sessionId[0] : sessionId;
 
 		// Handle W3C Trace Context format
 		if (typeof context.traceId === "string" && context.traceId.includes("-")) {
@@ -177,7 +180,9 @@ export class CorrelationManager {
 	/**
 	 * Inject correlation IDs into HTTP headers
 	 */
-	injectIntoHeaders(headers: Record<string, string> = {}): Record<string, string> {
+	injectIntoHeaders(
+		headers: Record<string, string> = {},
+	): Record<string, string> {
 		const context = this.getContext();
 
 		if (context.requestId) headers["x-request-id"] = context.requestId;
@@ -188,7 +193,7 @@ export class CorrelationManager {
 
 		// Add W3C Trace Context header
 		if (context.traceId && context.spanId) {
-			headers["traceparent"] = `00-${context.traceId}-${context.spanId}-01`;
+			headers.traceparent = `00-${context.traceId}-${context.spanId}-01`;
 		}
 
 		return headers;
@@ -198,7 +203,14 @@ export class CorrelationManager {
 	 * Create a middleware for Express/Koa style frameworks
 	 */
 	middleware() {
-		return (req: any, res: any, next: any) => {
+		return (
+			req: {
+				headers: Record<string, string | string[] | undefined>;
+				correlationContext?: any;
+			},
+			res: { setHeader: (name: string, value: string) => void },
+			next: () => void,
+		) => {
 			// Extract existing context from headers
 			const context = this.extractFromHeaders(req.headers);
 
@@ -235,23 +247,23 @@ export const correlationManager = CorrelationManager.getInstance();
  * Decorators for correlation tracking
  */
 export function withCorrelation(
-	target: any,
-	propertyKey: string,
-	descriptor: PropertyDescriptor
+	_target: unknown,
+	_propertyKey: string,
+	descriptor: PropertyDescriptor,
 ) {
 	const originalMethod = descriptor.value;
 
-	descriptor.value = async function (...args: any[]) {
+	descriptor.value = async function (...args: unknown[]) {
 		const manager = CorrelationManager.getInstance();
 		const childContext = manager.createChildSpan();
-		
+
 		// Store original context
 		const originalContext = manager.getContext();
-		
+
 		try {
 			// Set child context
 			manager.setContext(childContext);
-			
+
 			// Execute original method
 			return await originalMethod.apply(this, args);
 		} finally {

@@ -6,9 +6,9 @@
 export * from "./constants.js";
 export {
 	ContextBuilder,
+	type ContextManager,
 	context,
 	contextManager,
-	type IContextManager,
 	type LogContext,
 	withContext,
 } from "./context/index.js";
@@ -41,7 +41,7 @@ const defaultLogger = new EdgeLogger({
 
 // Make logger available globally in browser
 if (typeof window !== "undefined") {
-	(window as any).nexlog = defaultLogger;
+	(window as unknown as Record<string, unknown>).nexlog = defaultLogger;
 }
 
 export default defaultLogger;

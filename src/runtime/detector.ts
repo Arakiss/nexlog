@@ -28,32 +28,39 @@ interface RuntimeCapabilities {
 export function detectRuntime(): RuntimeEnvironment {
 	// Check for Bun runtime first (highest priority)
 	if (
-		typeof (globalThis as any).Bun !== "undefined" &&
-		typeof (globalThis as any).Bun.version === "string"
+		typeof (globalThis as Record<string, unknown>).Bun !== "undefined" &&
+		typeof (
+			(globalThis as Record<string, unknown>).Bun as { version?: unknown }
+		)?.version === "string"
 	) {
 		return "bun";
 	}
 
 	// Enhanced Edge Runtime detection
-	const isEdgeRuntime = 
+	const isEdgeRuntime =
 		// Vercel Edge Runtime
-		(typeof (globalThis as any).EdgeRuntime !== "undefined") ||
+		typeof (globalThis as Record<string, unknown>).EdgeRuntime !==
+			"undefined" ||
 		// Next.js Edge Runtime
 		(typeof process !== "undefined" && process.env?.NEXT_RUNTIME === "edge") ||
 		// Cloudflare Workers
-		(typeof (globalThis as any).caches !== "undefined" && 
-		 typeof (globalThis as any).Request !== "undefined" &&
-		 typeof (globalThis as any).Response !== "undefined" &&
-		 !globalThis.window) ||
+		(typeof (globalThis as Record<string, unknown>).caches !== "undefined" &&
+			typeof (globalThis as Record<string, unknown>).Request !== "undefined" &&
+			typeof (globalThis as Record<string, unknown>).Response !== "undefined" &&
+			!globalThis.window) ||
 		// Deno Deploy
-		(typeof (globalThis as any).Deno !== "undefined" && 
-		 (globalThis as any).Deno.env?.get("DENO_DEPLOYMENT_ID")) ||
+		(typeof (globalThis as Record<string, unknown>).Deno !== "undefined" &&
+			(
+				(globalThis as Record<string, unknown>).Deno as {
+					env?: { get?: (key: string) => unknown };
+				}
+			)?.env?.get?.("DENO_DEPLOYMENT_ID")) ||
 		// Auto-detect: No Node.js APIs available
-		(typeof globalThis !== "undefined" && 
-		 !globalThis.process?.versions?.node &&
-		 typeof globalThis.fetch !== "undefined" &&
-		 typeof globalThis.crypto !== "undefined" &&
-		 typeof globalThis.TextEncoder !== "undefined");
+		(typeof globalThis !== "undefined" &&
+			!globalThis.process?.versions?.node &&
+			typeof globalThis.fetch !== "undefined" &&
+			typeof globalThis.crypto !== "undefined" &&
+			typeof globalThis.TextEncoder !== "undefined");
 
 	if (isEdgeRuntime) {
 		return "edge";
@@ -76,7 +83,8 @@ export function detectRuntime(): RuntimeEnvironment {
 	// Check for Web Workers
 	if (
 		typeof self !== "undefined" &&
-		typeof (self as any).importScripts === "function"
+		typeof (self as unknown as Record<string, unknown>).importScripts ===
+			"function"
 	) {
 		return "worker";
 	}

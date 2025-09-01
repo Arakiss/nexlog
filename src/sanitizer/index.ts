@@ -191,14 +191,14 @@ export class Sanitizer {
 		}
 
 		// Apply patterns
-		for (const [name, pattern] of this.compiledPatterns) {
+		for (const [_name, pattern] of this.compiledPatterns) {
 			// Skip if pattern is field-specific and doesn't match
 			if (pattern.fields && fieldName && !pattern.fields.includes(fieldName)) {
 				continue;
 			}
 
 			// Test pattern
-			if (pattern.pattern && pattern.pattern.test(value)) {
+			if (pattern.pattern?.test(value)) {
 				if (typeof pattern.replacement === "function") {
 					return pattern.replacement(value);
 				}
