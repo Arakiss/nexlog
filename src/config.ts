@@ -433,15 +433,15 @@ export class ConfigManager {
 	 * Check if logging should be enabled for current environment
 	 */
 	shouldLog(
-		environment: "bun" | "server" | "browser" | "edge" | "unknown",
+		environment: "bun" | "node" | "browser" | "edge" | "worker" | "unknown",
 	): boolean {
 		// Check global enabled flag first
 		if (!this.config.enabled) return false;
 
-		// Check SSR-only mode (Bun, server, and edge count as server-side)
+		// Check SSR-only mode (Bun, node, and edge count as server-side)
 		if (
 			this.config.ssrOnly &&
-			environment !== "server" &&
+			environment !== "node" &&
 			environment !== "bun" &&
 			environment !== "edge"
 		)
@@ -455,8 +455,10 @@ export class ConfigManager {
 				return this.config.clientEnabled !== false;
 			case "edge":
 				return this.config.edgeEnabled !== false;
-			case "server":
-				return true; // Server is always enabled unless globally disabled
+			case "node":
+				return true; // Node is always enabled unless globally disabled
+			case "worker":
+				return this.config.clientEnabled !== false;
 			default:
 				return true;
 		}

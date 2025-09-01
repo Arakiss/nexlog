@@ -11,7 +11,7 @@ import {
 import logger, {
 	BatchedTransport,
 	ConsoleTransport,
-	detectEnvironment,
+	detectRuntime,
 	isBrowser,
 	isEdge,
 	isServer,
@@ -68,9 +68,11 @@ describe("Environment Detection", () => {
 		expect(typeof isEdge).toBe("boolean");
 	});
 
-	test("detectEnvironment returns valid environment", () => {
-		const env = detectEnvironment();
-		expect(["bun", "server", "browser", "edge", "unknown"]).toContain(env);
+	test("detectRuntime returns valid environment", () => {
+		const env = detectRuntime();
+		expect(["bun", "node", "browser", "edge", "worker", "unknown"]).toContain(
+			env,
+		);
 	});
 
 	test("detects Edge Runtime when EdgeRuntime is present", () => {
@@ -81,7 +83,7 @@ describe("Environment Detection", () => {
 
 		// Since Bun is always present in this test environment,
 		// we expect Bun to be detected first
-		const env = detectEnvironment();
+		const env = detectRuntime();
 		expect(["bun", "edge"]).toContain(env);
 
 		globalThis.EdgeRuntime = originalEdgeRuntime;

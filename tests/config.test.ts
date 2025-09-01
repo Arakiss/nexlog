@@ -289,21 +289,21 @@ describe("ConfigManager", () => {
 			setEnvAndReload({ NEXLOG_CLIENT_ENABLED: "false" });
 
 			expect(configManager.shouldLog("browser")).toBe(false);
-			expect(configManager.shouldLog("server")).toBe(true);
+			expect(configManager.shouldLog("node")).toBe(true);
 		});
 
 		test("shouldLog respects edge enabled setting", () => {
 			setEnvAndReload({ NEXLOG_EDGE_ENABLED: "false" });
 
 			expect(configManager.shouldLog("edge")).toBe(false);
-			expect(configManager.shouldLog("server")).toBe(true);
+			expect(configManager.shouldLog("node")).toBe(true);
 		});
 
 		test("shouldLog respects SSR-only mode", () => {
 			setEnvAndReload({ NEXLOG_SSR_ONLY: "true" });
 
 			expect(configManager.shouldLog("browser")).toBe(false);
-			expect(configManager.shouldLog("server")).toBe(true);
+			expect(configManager.shouldLog("node")).toBe(true);
 			expect(configManager.shouldLog("edge")).toBe(true);
 			expect(configManager.shouldLog("bun")).toBe(true);
 		});
