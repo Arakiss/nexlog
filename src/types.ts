@@ -5,7 +5,14 @@
 /**
  * Available log levels from least to most severe
  */
-export type LogLevel = "trace" | "debug" | "info" | "success" | "warn" | "error" | "fatal";
+export type LogLevel =
+	| "trace"
+	| "debug"
+	| "info"
+	| "success"
+	| "warn"
+	| "error"
+	| "fatal";
 
 /**
  * Runtime environment types
@@ -75,11 +82,11 @@ export interface LoggerPlugin {
 	/** Plugin version */
 	version?: string;
 	/** Called when logger is initialized */
-	init?(logger: any): void;
+	init?(logger: unknown): void;
 	/** Transform log entry before output */
 	transform?(entry: LogEntry): LogEntry | null;
 	/** Called before log is written */
-	beforeLog?(entry: LogEntry): void | false | Promise<void | false>;
+	beforeLog?(entry: LogEntry): false | undefined | Promise<false | undefined>;
 	/** Called after log is written */
 	afterLog?(entry: LogEntry): void | Promise<void>;
 }
@@ -108,13 +115,13 @@ export interface BaseLoggerConfig {
  * Strict log level type with better TypeScript support
  */
 export const LogLevels = {
-	TRACE: "trace",
-	DEBUG: "debug",
-	INFO: "info",
-	SUCCESS: "success",
-	WARN: "warn",
-	ERROR: "error",
-	FATAL: "fatal",
+	trace: "trace",
+	debug: "debug",
+	info: "info",
+	success: "success",
+	warn: "warn",
+	error: "error",
+	fatal: "fatal",
 } as const;
 
 export type LogLevelValue = (typeof LogLevels)[keyof typeof LogLevels];
@@ -122,7 +129,7 @@ export type LogLevelValue = (typeof LogLevels)[keyof typeof LogLevels];
 /**
  * Generic logger interface for type safety
  */
-export interface ILogger {
+export interface Logger {
 	trace(message: string, metadata?: LogMetadata): void;
 	debug(message: string, metadata?: LogMetadata): void;
 	info(message: string, metadata?: LogMetadata): void;
@@ -137,8 +144,8 @@ export interface ILogger {
 	disable(): void;
 	isEnabled(): boolean;
 
-	child(namespace: string, config?: any): ILogger;
-	withContext(context: LogMetadata): ILogger;
+	child(namespace: string, config?: unknown): Logger;
+	withContext(context: LogMetadata): Logger;
 
 	flush(): Promise<void>;
 	getStats(): any;

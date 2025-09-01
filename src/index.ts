@@ -7,7 +7,14 @@
 import { configManager } from "./config.js";
 import { COLORS, DEFAULTS, LEVEL_COLORS, LOG_LEVELS } from "./constants.js";
 import { contextManager } from "./context/index.js";
-import { correlationManager, type CorrelationContext } from "./correlation/index.js";
+import {
+	type CorrelationContext,
+	correlationManager,
+} from "./correlation/index.js";
+import {
+	PrettyFormatter,
+	type PrettyPrintOptions,
+} from "./formatters/pretty.js";
 import {
 	CAPABILITIES,
 	detectRuntime,
@@ -17,7 +24,7 @@ import {
 } from "./runtime/detector.js";
 import { Sanitizer } from "./sanitizer/index.js";
 import type {
-	ILogger,
+	Logger as ILogger,
 	LogEntry,
 	LoggerPlugin,
 	LogLevel,
@@ -26,7 +33,6 @@ import type {
 } from "./types.js";
 import { CircularBuffer } from "./utils/circular-buffer.js";
 import { ErrorSerializer } from "./utils/error-serializer.js";
-import { PrettyFormatter, type PrettyPrintOptions } from "./formatters/pretty.js";
 
 export * from "./constants.js";
 export * from "./context/index.js";
@@ -189,7 +195,7 @@ export class BatchedTransport implements Transport {
 		// Apply backpressure if needed
 		if (this.pressure > this.backpressureThreshold) {
 			// Drop low priority logs
-			if (LOG_LEVELS[entry.level] < LOG_LEVELS["warn"]) {
+			if (LOG_LEVELS[entry.level] < LOG_LEVELS.warn) {
 				return;
 			}
 		}
@@ -241,7 +247,7 @@ export class Logger implements ILogger {
 	private readonly environment: RuntimeEnvironment;
 	private readonly buffer: CircularBuffer<LogEntry>;
 	private readonly sanitizer?: Sanitizer;
-	private readonly prettyFormatter?: PrettyFormatter;
+	private prettyFormatter?: PrettyFormatter;
 
 	constructor(config?: LoggerConfig) {
 		this.environment = detectRuntime();
@@ -263,11 +269,12 @@ export class Logger implements ILogger {
 				(envConfig.enabled !== false ? configManager.createTransports() : []),
 			structured: config?.structured ?? envConfig.structured ?? false,
 			samplingRate: config?.samplingRate ?? envConfig.samplingRate ?? 1,
-			bufferSize: config?.bufferSize ?? DEFAULTS.BUFFER_SIZE,
+			bufferSize: config?.bufferSize ?? DEFAULTS.bufferSize,
 			sanitize: config?.sanitize ?? true,
 			sanitizeOptions: config?.sanitizeOptions ?? {},
 			maskFields: config?.maskFields ?? [],
-			prettyPrint: config?.prettyPrint ?? (envConfig.devTools && !envConfig.structured),
+			prettyPrint:
+				config?.prettyPrint ?? (envConfig.devTools && !envConfig.structured),
 			correlationContext: config?.correlationContext ?? {},
 		} as Required<LoggerConfig>;
 
@@ -294,9 +301,12 @@ export class Logger implements ILogger {
 
 		// Initialize pretty formatter if enabled
 		if (this.config.prettyPrint) {
-			const prettyOptions = typeof this.config.prettyPrint === "object" 
-				? this.config.prettyPrint 
-				: { colors: this.environment === "node" || this.environment === "bun" };
+			const prettyOptions =
+				typeof this.config.prettyPrint === "object"
+					? this.config.prettyPrint
+					: {
+							colors: this.environment === "node" || this.environment === "bun",
+						};
 			this.prettyFormatter = new PrettyFormatter(prettyOptions);
 		}
 
@@ -314,10 +324,13 @@ export class Logger implements ILogger {
 	/**
 	 * Creates a child logger with inherited configuration
 	 */
-	child(namespace: string | { module?: string } | undefined, config?: Partial<LoggerConfig>): Logger {
+	child(
+		namespace: string | { module?: string } | undefined,
+		config?: Partial<LoggerConfig>,
+	): Logger {
 		// Handle module object or auto-detect from stack
 		let finalNamespace: string;
-		
+
 		if (!namespace) {
 			// Auto-detect module from stack
 			finalNamespace = this.extractModuleFromStack();
@@ -358,18 +371,18 @@ export class Logger implements ILogger {
 	private extractModuleFromStack(): string {
 		const error = new Error();
 		const stack = error.stack;
-		
+
 		if (!stack) return "unknown";
-		
+
 		const lines = stack.split("\n");
 		// Skip first 3 lines (Error message, this function, child function)
 		for (let i = 3; i < lines.length && i < 6; i++) {
 			const line = lines[i];
 			if (!line) continue;
-			
+
 			// Extract filename from stack trace
 			const match = line.match(/\(([^)]+)\)/);
-			if (match && match[1]) {
+			if (match?.[1]) {
 				const path = match[1];
 				// Extract just the filename without extension
 				const parts = path.split("/");
@@ -382,7 +395,7 @@ export class Logger implements ILogger {
 				}
 			}
 		}
-		
+
 		return "unknown";
 	}
 
@@ -522,7 +535,9 @@ export class Logger implements ILogger {
 		// Sanitize metadata if enabled
 		let sanitizedMetadata = processedMetadata;
 		if (this.sanitizer && processedMetadata) {
-			sanitizedMetadata = this.sanitizer.sanitizeValue(processedMetadata) as LogMetadata;
+			sanitizedMetadata = this.sanitizer.sanitizeValue(
+				processedMetadata,
+			) as LogMetadata;
 		}
 
 		// Build log entry
@@ -779,7 +794,10 @@ export class Logger implements ILogger {
 	 * Set correlation context for this logger instance
 	 */
 	setCorrelationContext(context: CorrelationContext): void {
-		this.config.correlationContext = { ...this.config.correlationContext, ...context };
+		this.config.correlationContext = {
+			...this.config.correlationContext,
+			...context,
+		};
 		correlationManager.setContext(this.config.correlationContext);
 	}
 
@@ -805,7 +823,10 @@ export class Logger implements ILogger {
 	 */
 	private containsError(metadata: LogMetadata): boolean {
 		for (const value of Object.values(metadata)) {
-			if (value instanceof Error || (typeof value === "object" && value !== null && "message" in value)) {
+			if (
+				value instanceof Error ||
+				(typeof value === "object" && value !== null && "message" in value)
+			) {
 				return true;
 			}
 		}
@@ -817,15 +838,18 @@ export class Logger implements ILogger {
 	 */
 	private serializeErrors(metadata: LogMetadata): LogMetadata {
 		const serialized: LogMetadata = {};
-		
+
 		for (const [key, value] of Object.entries(metadata)) {
-			if (value instanceof Error || (typeof value === "object" && value !== null && "message" in value)) {
+			if (
+				value instanceof Error ||
+				(typeof value === "object" && value !== null && "message" in value)
+			) {
 				serialized[key] = ErrorSerializer.serialize(value);
 			} else {
 				serialized[key] = value;
 			}
 		}
-		
+
 		return serialized;
 	}
 

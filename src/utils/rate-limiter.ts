@@ -21,7 +21,7 @@ export class RateLimiter {
 	private readonly refillRate: number;
 	private droppedCount = 0;
 
-	constructor(private options: RateLimiterOptions) {
+	constructor(options: RateLimiterOptions) {
 		this.maxTokens = options.maxLogs;
 		this.refillRate = options.maxLogs / options.windowMs; // tokens per ms
 		this.tokens = this.maxTokens;
@@ -74,7 +74,7 @@ export class MessageRateLimiter {
 	private limiters = new Map<string, RateLimiter>();
 	private defaultLimiter?: RateLimiter;
 
-	constructor(private defaultOptions?: RateLimiterOptions) {
+	constructor(defaultOptions?: RateLimiterOptions) {
 		if (defaultOptions) {
 			this.defaultLimiter = new RateLimiter(defaultOptions);
 		}
@@ -83,10 +83,10 @@ export class MessageRateLimiter {
 	/**
 	 * Check if a specific message should be rate limited
 	 */
-	shouldAllow(message: string, metadata?: { _rateLimit?: string }): boolean {
+	shouldAllow(_message: string, metadata?: { _rateLimit?: string }): boolean {
 		// Check for per-message rate limit
 		const rateLimitConfig = metadata?._rateLimit;
-		
+
 		if (rateLimitConfig) {
 			const limiter = this.getLimiterForConfig(rateLimitConfig);
 			return limiter.shouldAllow();
@@ -173,8 +173,8 @@ export class MessageRateLimiter {
 	 */
 	cleanup(): void {
 		// Remove limiters that haven't been used in the last hour
-		const cutoff = Date.now() - 60 * 60 * 1000;
-		
+		const _cutoff = Date.now() - 60 * 60 * 1000;
+
 		for (const [config, limiter] of this.limiters) {
 			// This is a simple heuristic - in a real implementation,
 			// you might want to track last usage time

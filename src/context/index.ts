@@ -18,7 +18,7 @@ export interface LogContext {
 /**
  * Abstract context manager interface
  */
-export interface IContextManager {
+export interface ContextManager {
 	run<T>(context: LogContext, fn: () => T): T;
 	runAsync<T>(context: LogContext, fn: () => Promise<T>): Promise<T>;
 	get(): LogContext | undefined;
@@ -30,14 +30,17 @@ export interface IContextManager {
 /**
  * Node.js AsyncLocalStorage-based context manager
  */
-class AsyncLocalStorageContextManager implements IContextManager {
-	private storage: any;
+class AsyncLocalStorageContextManager implements ContextManager {
+	private storage: {
+		run<T>(context: LogContext, fn: () => T): T;
+		getStore(): LogContext | undefined;
+	} | null = null;
 
 	constructor() {
 		if (HAS_PROCESS) {
 			try {
 				// Dynamic import to avoid Edge Runtime issues
-				const { AsyncLocalStorage } = require("async_hooks");
+				const { AsyncLocalStorage } = require("node:async_hooks");
 				this.storage = new AsyncLocalStorage();
 			} catch {
 				// Fallback if async_hooks is not available
@@ -97,9 +100,8 @@ class AsyncLocalStorageContextManager implements IContextManager {
 /**
  * Edge Runtime / Browser context manager using a global WeakMap
  */
-class GlobalContextManager implements IContextManager {
+class GlobalContextManager implements ContextManager {
 	private static instance: GlobalContextManager;
-	private contexts = new WeakMap<object, LogContext>();
 	private currentContext: LogContext | undefined;
 	private contextStack: LogContext[] = [];
 
@@ -161,7 +163,7 @@ class GlobalContextManager implements IContextManager {
 /**
  * Context manager factory
  */
-export function createContextManager(): IContextManager {
+export function createContextManager(): ContextManager {
 	if (HAS_PROCESS && CAPABILITIES.hasAsyncLocalStorage) {
 		return new AsyncLocalStorageContextManager();
 	}
@@ -243,10 +245,14 @@ export function context(): ContextBuilder {
  * Decorator for adding context to class methods
  */
 export function withContext(context: LogContext | (() => LogContext)) {
-	return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+	return (
+		_target: unknown,
+		_propertyKey: string,
+		descriptor: PropertyDescriptor,
+	) => {
 		const originalMethod = descriptor.value;
 
-		descriptor.value = async function (...args: any[]) {
+		descriptor.value = async function (...args: unknown[]) {
 			const ctx = typeof context === "function" ? context() : context;
 
 			if (originalMethod.constructor.name === "AsyncFunction") {
@@ -262,19 +268,53 @@ export function withContext(context: LogContext | (() => LogContext)) {
 	};
 }
 
+interface ExpressRequest {
+	id?: string;
+	headers: Record<string, string | string[] | undefined>;
+	user?: { id?: string };
+	session?: { id?: string };
+	method?: string;
+	path?: string;
+	url?: string;
+	ip?: string;
+	connection?: { remoteAddress?: string };
+}
+
+interface NextJsRequest {
+	headers: { get(name: string): string | null };
+	method: string;
+	url: string;
+}
+
+function extractHeader(
+	headers: Record<string, string | string[] | undefined>,
+	name: string,
+): string | undefined {
+	const value = headers[name];
+	return Array.isArray(value) ? value[0] : value;
+}
+
 /**
  * Express/Koa middleware for automatic context injection
  */
-export function contextMiddleware(generateContext?: (req: any) => LogContext) {
-	return async (req: any, res: any, next: any) => {
+export function contextMiddleware(
+	generateContext?: (req: ExpressRequest) => LogContext,
+) {
+	return async (
+		req: ExpressRequest,
+		_res: Record<string, unknown>,
+		next: () => void,
+	) => {
 		const context: LogContext = generateContext
 			? generateContext(req)
 			: {
 					requestId:
-						req.id || req.headers["x-request-id"] || crypto.randomUUID(),
+						req.id ||
+						extractHeader(req.headers, "x-request-id") ||
+						crypto.randomUUID(),
 					userId: req.user?.id,
 					sessionId: req.session?.id,
-					traceId: req.headers["x-trace-id"],
+					traceId: extractHeader(req.headers, "x-trace-id"),
 					method: req.method,
 					path: req.path || req.url,
 					ip: req.ip || req.connection?.remoteAddress,
@@ -290,14 +330,18 @@ export function contextMiddleware(generateContext?: (req: any) => LogContext) {
  * Next.js middleware for automatic context injection
  */
 export function nextContextMiddleware(
-	generateContext?: (req: any) => LogContext,
+	generateContext?: (req: NextJsRequest) => LogContext,
 ) {
-	return async (req: any, event: any, next: any) => {
+	return async (
+		req: NextJsRequest,
+		_event: Record<string, unknown>,
+		next: () => void,
+	) => {
 		const context: LogContext = generateContext
 			? generateContext(req)
 			: {
-					requestId: req.headers.get("x-request-id") || crypto.randomUUID(),
-					traceId: req.headers.get("x-trace-id"),
+					requestId: req.headers.get("x-request-id") ?? crypto.randomUUID(),
+					traceId: req.headers.get("x-trace-id") ?? undefined,
 					method: req.method,
 					path: new URL(req.url).pathname,
 					ip:

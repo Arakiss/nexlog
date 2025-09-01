@@ -41,10 +41,10 @@ export class ErrorSerializer {
 	 * Serialize any error-like object into a structured format
 	 */
 	static serialize(error: unknown, depth = 0): SerializedError | undefined {
-		if (depth > this.MAX_DEPTH) {
+		if (depth > ErrorSerializer.MAX_DEPTH) {
 			return {
 				name: "MaxDepthExceeded",
-				message: `Maximum serialization depth of ${this.MAX_DEPTH} exceeded`,
+				message: `Maximum serialization depth of ${ErrorSerializer.MAX_DEPTH} exceeded`,
 			};
 		}
 
@@ -54,12 +54,14 @@ export class ErrorSerializer {
 
 		// Handle Error instances
 		if (error instanceof Error) {
-			return this.serializeError(error, depth);
+			return ErrorSerializer.serializeError(error, depth);
 		}
 
 		// Handle error-like objects
 		if (typeof error === "object" && error !== null) {
-			return this.serializeErrorLike(error as Record<string, unknown>);
+			return ErrorSerializer.serializeErrorLike(
+				error as Record<string, unknown>,
+			);
 		}
 
 		// Handle primitive values
@@ -80,19 +82,19 @@ export class ErrorSerializer {
 
 		// Parse stack trace
 		if (error.stack) {
-			serialized.stack = this.parseStackTrace(error.stack);
+			serialized.stack = ErrorSerializer.parseStackTrace(error.stack);
 		}
 
 		// Handle Error cause chain (ES2022 feature)
 		if ("cause" in error && error.cause) {
-			serialized.cause = this.serialize(error.cause, depth + 1);
+			serialized.cause = ErrorSerializer.serialize(error.cause, depth + 1);
 		}
 
 		// Extract common Node.js error properties
-		this.extractCommonProperties(error, serialized);
+		ErrorSerializer.extractCommonProperties(error, serialized);
 
 		// Extract custom properties
-		this.extractCustomProperties(error, serialized);
+		ErrorSerializer.extractCustomProperties(error, serialized);
 
 		return serialized;
 	}
@@ -100,7 +102,9 @@ export class ErrorSerializer {
 	/**
 	 * Serialize error-like objects
 	 */
-	private static serializeErrorLike(obj: Record<string, unknown>): SerializedError {
+	private static serializeErrorLike(
+		obj: Record<string, unknown>,
+	): SerializedError {
 		const serialized: SerializedError = {
 			name: String(obj.name || "Error"),
 			message: String(obj.message || "Unknown error"),
@@ -108,16 +112,16 @@ export class ErrorSerializer {
 
 		// Try to parse stack if it exists
 		if (typeof obj.stack === "string") {
-			serialized.stack = this.parseStackTrace(obj.stack);
+			serialized.stack = ErrorSerializer.parseStackTrace(obj.stack);
 		}
 
 		// Handle cause chain
 		if (obj.cause) {
-			serialized.cause = this.serialize(obj.cause, 1);
+			serialized.cause = ErrorSerializer.serialize(obj.cause, 1);
 		}
 
 		// Extract common properties
-		this.extractCommonProperties(obj, serialized);
+		ErrorSerializer.extractCommonProperties(obj, serialized);
 
 		return serialized;
 	}
@@ -131,13 +135,13 @@ export class ErrorSerializer {
 
 		for (const line of lines) {
 			const trimmed = line.trim();
-			
+
 			// Skip the error message line
 			if (!trimmed.startsWith("at ")) {
 				continue;
 			}
 
-			const frame = this.parseStackFrame(trimmed);
+			const frame = ErrorSerializer.parseStackFrame(trimmed);
 			if (frame) {
 				frames.push(frame);
 			}
@@ -168,7 +172,13 @@ export class ErrorSerializer {
 		for (const pattern of patterns) {
 			const match = cleaned.match(pattern);
 			if (match) {
-				if (match.length === 5 && match[1] && match[2] && match[3] && match[4]) {
+				if (
+					match.length === 5 &&
+					match[1] &&
+					match[2] &&
+					match[3] &&
+					match[4]
+				) {
 					// Has function name
 					return {
 						function: match[1],
@@ -212,7 +222,7 @@ export class ErrorSerializer {
 	 */
 	private static extractCommonProperties(
 		error: Error | Record<string, unknown>,
-		serialized: SerializedError
+		serialized: SerializedError,
 	): void {
 		const commonProps = [
 			"code",
@@ -228,7 +238,9 @@ export class ErrorSerializer {
 
 		for (const prop of commonProps) {
 			if (prop in error && error[prop as keyof typeof error] != null) {
-				serialized[prop as keyof SerializedError] = error[prop as keyof typeof error] as any;
+				serialized[prop as keyof SerializedError] = error[
+					prop as keyof typeof error
+				] as any;
 			}
 		}
 	}
@@ -238,7 +250,7 @@ export class ErrorSerializer {
 	 */
 	private static extractCustomProperties(
 		error: Error | Record<string, unknown>,
-		serialized: SerializedError
+		serialized: SerializedError,
 	): void {
 		const standardProps = new Set([
 			"name",
@@ -264,13 +276,13 @@ export class ErrorSerializer {
 			}
 
 			// Limit number of custom properties
-			if (propertyCount >= this.MAX_PROPERTIES) {
-				serialized["_truncated"] = `Additional ${Object.keys(error).length - standardProps.size - propertyCount} properties truncated`;
+			if (propertyCount >= ErrorSerializer.MAX_PROPERTIES) {
+				serialized._truncated = `Additional ${Object.keys(error).length - standardProps.size - propertyCount} properties truncated`;
 				break;
 			}
 
 			// Only include serializable values
-			if (this.isSerializable(value)) {
+			if (ErrorSerializer.isSerializable(value)) {
 				serialized[key] = value;
 				propertyCount++;
 			}
@@ -365,7 +377,10 @@ export class ErrorSerializer {
 	/**
 	 * Format error for display
 	 */
-	static formatForDisplay(error: SerializedError, includeStack = false): string {
+	static formatForDisplay(
+		error: SerializedError,
+		includeStack = false,
+	): string {
 		let output = `${error.name}: ${error.message}`;
 
 		if (error.code) {
@@ -373,13 +388,20 @@ export class ErrorSerializer {
 		}
 
 		if (includeStack && error.stack && error.stack.length > 0) {
-			output += "\n" + error.stack.map(frame => 
-				`  at ${frame.function || "anonymous"} (${frame.file}:${frame.line || "?"}:${frame.column || "?"})`
-			).join("\n");
+			output +=
+				"\n" +
+				error.stack
+					.map(
+						(frame) =>
+							`  at ${frame.function || "anonymous"} (${frame.file}:${frame.line || "?"}:${frame.column || "?"})`,
+					)
+					.join("\n");
 		}
 
 		if (error.cause) {
-			output += "\n\nCaused by: " + this.formatForDisplay(error.cause, includeStack);
+			output +=
+				"\n\nCaused by: " +
+				ErrorSerializer.formatForDisplay(error.cause, includeStack);
 		}
 
 		return output;
