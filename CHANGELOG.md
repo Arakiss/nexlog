@@ -1,5 +1,57 @@
 # nexlog
 
+## 5.1.0
+
+### Minor Changes
+
+- 🚀 Enterprise Features Release - v5.1.0
+
+  ## Edge Runtime Compatibility
+
+  - Full support for Vercel Edge Functions, Cloudflare Workers, and other edge environments
+  - Automatic runtime detection (node/edge/browser/bun/worker)
+  - Conditional exports for optimized builds per environment
+
+  ## Data Privacy & Security
+
+  - Built-in data sanitization system
+  - Automatic masking of sensitive fields (passwords, tokens, API keys, emails)
+  - Configurable sanitization patterns and custom field masking
+  - Deep object traversal with circular reference protection
+
+  ## Context Management
+
+  - Persistent context tracking across async operations
+  - AsyncLocalStorage support for Node.js
+  - Global context manager for Edge/Browser environments
+  - Request correlation with automatic context propagation
+
+  ## Performance & Reliability
+
+  - Circular buffer implementation prevents memory leaks
+  - Smart batching with backpressure handling
+  - Configurable sampling rates for high-volume scenarios
+  - Zero memory leak guarantee with bounded buffers
+
+  ## Developer Experience
+
+  - Enhanced TypeScript support with strict types and generics
+  - Plugin system for extensibility
+  - Performance profiling utilities
+  - Symbol.dispose support for automatic resource cleanup
+
+  ## New Features
+
+  - `withContext()` method for scoped logging contexts
+  - `measure()` method with automatic disposal
+  - `getRecentLogs()` for debugging and monitoring
+  - Environment-based configuration via env variables
+  - Multiple entry points (nexlog/edge, nexlog/browser)
+
+  ## Breaking Changes
+
+  None - All new features are opt-in and backward compatible.
+
 ## 5.0.0
 
 ### Major Changes

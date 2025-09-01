@@ -1,18 +1,46 @@
 {
 	"name": "nexlog",
-	"version": "5.0.0",
+	"version": "5.1.0",
 	"description": "A simple and effective logging library for Next.js, compatible with server, browser, and edge environments.",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
+			"edge-runtime": "./dist/edge.js",
+			"edge-light": "./dist/edge.js",
+			"worker": "./dist/edge.js",
+			"node": {
+				"import": "./dist/index.js",
+				"require": "./dist/index.cjs"
+			},
+			"browser": "./dist/browser.js",
+			"default": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./edge": {
+			"import": "./dist/edge.js",
+			"types": "./dist/edge.d.ts"
+		},
+		"./node": {
 			"import": "./dist/index.js",
 			"types": "./dist/index.d.ts"
 		},
 		"./react": {
 			"import": "./dist/react/logger-provider.js",
 			"types": "./dist/react/logger-provider.d.ts"
+		},
+		"./sanitizer": {
+			"import": "./dist/sanitizer/index.js",
+			"types": "./dist/sanitizer/index.d.ts"
+		},
+		"./context": {
+			"import": "./dist/context/index.js",
+			"types": "./dist/context/index.d.ts"
+		},
+		"./types": {
+			"import": "./dist/types.js",
+			"types": "./dist/types.d.ts"
 		}
 	},
 	"files": [
@@ -24,7 +52,9 @@
 		"test:watch": "bun test --watch",
 		"test:coverage": "bun test --coverage",
 		"typecheck": "tsc --noEmit",
-		"build": "tsc",
+		"build": "bun run build:clean && bun run build:compile",
+		"build:clean": "rm -rf dist",
+		"build:compile": "tsc",
 		"lint": "biome check --write .",
 		"format": "biome format --write .",
 		"check": "biome check .",
