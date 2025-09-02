@@ -1,36 +1,36 @@
 # nexlog
 
-A blazing-fast, modern logging library for Next.js, optimized for Bun runtime with advanced features like structured logging, custom transports, plugins, and React integration.
+A modern, enterprise-grade logging library for Next.js with **Edge Runtime support**, **automatic data sanitization**, and **distributed tracing**. Built for production-scale applications with GDPR compliance, correlation IDs, and zero-configuration security.
 
 ![CI/CD](https://github.com/Arakiss/nexlog/actions/workflows/ci-cd.yml/badge.svg)
 ![npm version](https://img.shields.io/npm/v/nexlog.svg)
 ![License](https://img.shields.io/npm/l/nexlog.svg)
-![Bun](https://img.shields.io/badge/runtime-Bun-f472b6.svg)
+![Edge Runtime](https://img.shields.io/badge/Edge%20Runtime-✅-success.svg)
+![GDPR](https://img.shields.io/badge/GDPR-Compliant-blue.svg)
 
-## ✨ Features
+## ✨ Key Features
 
-### Core Features
-- 🐰 **Bun-Optimized** - Built and tested with Bun for maximum performance
-- 🚀 **Blazing Fast** - Leverages Bun's speed with batching and sampling
-- 🎯 **Environment Detection** - Automatic detection of server, browser, edge, and Bun runtime
-- 🎨 **Colored Console Output** - Beautiful colored logs in server environments
-- 📊 **Structured Logging** - JSON output for production environments
-- 🔌 **Plugin System** - Extend functionality with custom plugins
-- 🚢 **Custom Transports** - Send logs anywhere (console, files, external services)
-- 👶 **Child Loggers** - Namespaced logging with inherited configuration
-- 📈 **Performance Monitoring** - Built-in timing with Bun's high-precision timers
-- 🎛️ **Dynamic Configuration** - Change log levels and settings at runtime
-- 💾 **Batching Support** - Optimize performance with batched log output
-- 📊 **Statistics** - Track log counts, uptime, and more
-- 🌍 **Full Env Config** - Complete control via environment variables
+### 🚀 Edge Runtime & Production Ready
+- 🌐 **Edge Runtime Compatible** - Works seamlessly in Next.js middleware, Vercel Edge Functions, Cloudflare Workers
+- 🛡️ **Automatic Data Sanitization** - GDPR-compliant PII protection with smart field detection
+- 🔗 **Correlation IDs** - W3C Trace Context standard for distributed tracing
+- ⚡ **Advanced Error Serialization** - Proper cause chain support with circular reference handling
+- 💨 **Performance Optimized** - Memory leak prevention, circular buffers, and efficient batching
+- 🚦 **Rate Limiting & Sampling** - Enterprise-grade volume control with per-level configuration
 
-### React Features
-- ⚛️ **React Integration** - LoggerProvider and hooks for React apps
-- 🪝 **Custom Hooks** - useLogger, useChildLogger, usePerformanceLogger
-- 🎭 **HOC Support** - withLogger higher-order component
-- 🛠️ **DevTools Component** - Visual logger controls for development
-- 🌐 **Lifecycle Logging** - Automatic app lifecycle event tracking
-- 💪 **TypeScript Support** - Full type safety and IntelliSense
+### 🔒 Security & Compliance
+- 🔐 **Client/Server Separation** - Clear patterns for secure logging architectures
+- 🏷️ **Smart Data Masking** - Auto-detects passwords, tokens, emails, credit cards, and more
+- 📊 **Context Management** - AsyncLocalStorage-based context persistence in Node.js
+- 🔍 **Smart Module Detection** - Auto-namespacing from stack traces for better debugging
+
+### 🎨 Developer Experience
+- 🎯 **Pretty Print Formatter** - Beautiful development console output with emojis
+- 🔄 **Zero Configuration** - Works out-of-the-box with intelligent defaults
+- 🌍 **Universal Runtime** - Server, browser, edge, Node.js, Bun - everything works
+- 💪 **TypeScript First** - Full type safety and IntelliSense support
+- ⚛️ **React Integration** - Hooks, providers, and components for React apps
+- 🎛️ **Dynamic Configuration** - Runtime adjustments via environment variables
 
 ## 📦 Installation
 
@@ -46,116 +46,261 @@ pnpm add nexlog
 
 ## 🚀 Quick Start
 
-### Basic Usage
+### Edge Runtime Compatible (Next.js Middleware)
 
 ```typescript
-import logger from 'nexlog';
+// middleware.ts - Works in Edge Runtime!
+import { EdgeLogger } from 'nexlog/edge';
 
-// Simple logging
-logger.info('Application started');
-logger.warn('This is a warning', { userId: 123 });
-logger.error('An error occurred', { error: new Error('Something went wrong') });
-
-// Set log level
-logger.setLevel('warn'); // Only warn and above will be logged
-
-// Enable/disable logging
-logger.disable(); // Temporarily disable all logging
-logger.enable();  // Re-enable logging
-```
-
-### Advanced Logger Configuration
-
-```typescript
-import { Logger, ConsoleTransport, BatchedTransport } from 'nexlog';
-
-// Create a custom logger instance
-const logger = new Logger({
-  level: 'debug',
-  namespace: 'my-app',
-  context: { version: '1.0.0', environment: 'production' },
-  structured: true, // Use JSON output
-  samplingRate: 0.5, // Log only 50% of messages (useful for high-volume logging)
-  transports: [
-    new ConsoleTransport({ useColors: true }),
-    new BatchedTransport(
-      new ConsoleTransport(),
-      { maxBatchSize: 100, flushInterval: 5000 }
-    )
-  ]
+const logger = new EdgeLogger({
+  structured: true,
+  sanitize: true, // Auto-mask sensitive data
 });
 
-// All logs will include the context
-logger.info('User logged in', { userId: 123 });
-// Output includes: version: "1.0.0", environment: "production", userId: 123
-```
-
-## 🏗️ Advanced Features
-
-### Child Loggers
-
-Create namespaced child loggers that inherit parent configuration:
-
-```typescript
-const dbLogger = logger.child('database');
-const apiLogger = logger.child('api');
-
-dbLogger.info('Connected to database');
-// Output: [INFO] [database] Connected to database
-
-const queryLogger = dbLogger.child('query');
-queryLogger.debug('Executing SELECT query');
-// Output: [DEBUG] [database:query] Executing SELECT query
-```
-
-### Custom Transports
-
-Create custom transports to send logs anywhere:
-
-```typescript
-import { Transport, LogEntry } from 'nexlog';
-
-class FileTransport implements Transport {
-  name = 'file';
-  
-  async log(entry: LogEntry) {
-    // Write to file, send to external service, etc.
-    await fs.appendFile('app.log', JSON.stringify(entry) + '\n');
-  }
-  
-  async flush() {
-    // Flush any buffered logs
-  }
+export function middleware(request: NextRequest) {
+  logger.info('Request received', {
+    path: request.nextUrl.pathname,
+    method: request.method,
+    userAgent: request.headers.get('user-agent'),
+    // PII automatically sanitized!
+    email: 'user@example.com', // → us***@example.com
+    password: 'secret123', // → [REDACTED]
+  });
 }
-
-logger.addTransport(new FileTransport());
 ```
 
-### Plugin System
-
-Extend logger functionality with plugins:
+### Server-Side with Context & Correlation
 
 ```typescript
-import { LoggerPlugin, LogEntry } from 'nexlog';
+// app/api/users/route.ts
+import logger from 'nexlog';
+import { context } from 'nexlog/context';
 
-const sensitiveDataPlugin: LoggerPlugin = {
-  name: 'sensitive-filter',
+export async function POST(request: Request) {
+  return context()
+    .withRequestId(crypto.randomUUID())
+    .withUserId(await getUserId(request))
+    .runAsync(async () => {
+      logger.info('Creating user', {
+        email: await request.json().email, // Auto-sanitized
+      });
+      
+      const user = await createUser(data);
+      logger.success('User created successfully', { userId: user.id });
+      
+      return Response.json(user);
+    });
+}
+```
+
+### Client-Side (Secure by Default)
+
+```typescript
+// Only non-sensitive logs reach the client
+import logger from 'nexlog';
+
+// This will be filtered out on client
+logger.debug('Debug info with API key', { apiKey: 'sk_test_123' });
+
+// This reaches the client safely
+logger.info('User action', { action: 'button_click', page: '/dashboard' });
+```
+
+## 🏗️ Production Configuration
+
+### High-Volume Application Setup
+
+```typescript
+import { Logger } from 'nexlog';
+import { defaultSanitizer } from 'nexlog/sanitizer';
+
+const logger = new Logger({
+  level: 'info',
+  structured: true,
+  sanitize: true,
   
-  transform(entry: LogEntry) {
-    // Redact sensitive information
-    const message = entry.message.replace(/password=\S+/g, 'password=***');
-    return { ...entry, message };
+  // Performance optimizations
+  sampling: {
+    trace: 0.01,    // 1% of trace logs
+    debug: 0.1,     // 10% of debug logs
+    info: 1.0,      // All info logs
   },
   
-  beforeLog(entry: LogEntry) {
-    // Skip logs containing certain patterns
-    if (entry.message.includes('SKIP_LOG')) {
-      return false; // Prevent this log from being written
-    }
-  }
-};
+  // Rate limiting
+  rateLimit: {
+    maxLogs: 1000,  // Max 1000 logs per minute
+    windowMs: 60000,
+  },
+  
+  // Memory management
+  bufferSize: 1000,
+  autoFlush: true,
+});
 
-logger.use(sensitiveDataPlugin);
+// Add custom sanitization rules
+defaultSanitizer.addPattern('custom-token', {
+  pattern: /token_[a-zA-Z0-9]+/g,
+  replacement: '[TOKEN_REDACTED]',
+});
+```
+
+### Environment-Based Configuration
+
+```bash
+# .env.production
+NEXLOG_LEVEL=warn
+NEXLOG_STRUCTURED=true
+NEXLOG_SANITIZE=true
+NEXLOG_EDGE_ENABLED=true
+NEXLOG_SAMPLING_INFO=0.1
+NEXLOG_CONTEXT_SERVICE=api
+NEXLOG_CONTEXT_VERSION=5.2.1
+```
+
+## 🔥 Advanced Features
+
+### Distributed Tracing & Correlation
+
+Track requests across your entire application:
+
+```typescript
+import { correlationManager } from 'nexlog/correlation';
+import { contextManager } from 'nexlog/context';
+
+// Middleware automatically extracts trace context
+app.use(correlationManager.middleware());
+
+// In your route handlers - correlation IDs are automatically included
+logger.info('Processing payment', { 
+  amount: 100,
+  // requestId, traceId, spanId automatically added from context
+});
+
+// Create child spans for operations
+const childContext = correlationManager.createChildSpan();
+contextManager.run(childContext, () => {
+  logger.info('Calling external API'); // New span ID
+});
+```
+
+### Smart Data Sanitization
+
+Built-in GDPR compliance with intelligent field detection:
+
+```typescript
+import { sanitize, defaultSanitizer } from 'nexlog/sanitizer';
+
+// Automatic detection of sensitive fields
+logger.info('User data', {
+  email: 'user@example.com',     // → us***@example.com
+  password: 'secret123',         // → [REDACTED]
+  creditCard: '4532123456789012', // → ****9012
+  apiKey: 'sk_live_xyz123',      // → [REDACTED]
+  ssn: '123-45-6789',           // → [REDACTED]
+});
+
+// Custom sanitization rules
+defaultSanitizer.addPattern('custom', {
+  pattern: /CUSTOM_[A-Z0-9]+/g,
+  replacement: '[CUSTOM_REDACTED]',
+});
+```
+
+### Context Management & AsyncLocalStorage
+
+Persistent context across async operations:
+
+```typescript
+import { context, contextManager } from 'nexlog/context';
+
+// Express middleware
+app.use((req, res, next) => {
+  context()
+    .withRequestId(req.id)
+    .withUserId(req.user?.id)
+    .withSessionId(req.session.id)
+    .run(() => next());
+});
+
+// Anywhere in your request handler
+logger.info('User action'); // Automatically includes requestId, userId, sessionId
+
+// Manual context management
+contextManager.run({ requestId: '123', operation: 'checkout' }, () => {
+  logger.info('Starting checkout'); // Context automatically included
+  processPayment(); // Context propagated to child calls
+});
+```
+
+### Advanced Error Serialization
+
+Proper error handling with cause chains:
+
+```typescript
+import { ErrorSerializer } from 'nexlog/utils';
+
+try {
+  await riskyOperation();
+} catch (error) {
+  // Automatically serializes error chains, stack traces, and custom properties
+  logger.error('Operation failed', { 
+    error, // Full error serialization with cause chain
+    operation: 'user_signup',
+  });
+  
+  // Manual serialization
+  const serialized = ErrorSerializer.serialize(error);
+  console.log(serialized.stack); // Parsed stack frames
+  console.log(serialized.cause); // Cause chain
+}
+```
+
+### Performance & Rate Limiting
+
+Enterprise-grade volume control:
+
+```typescript
+import { RateLimiter, AdvancedSampler } from 'nexlog/utils';
+
+// Per-level sampling
+const sampler = new AdvancedSampler({
+  trace: 0.01,  // 1% of trace logs
+  debug: 0.1,   // 10% of debug logs  
+  info: 1.0,    // All info logs
+  error: 1.0,   // All error logs
+});
+
+// Rate limiting
+const rateLimiter = new RateLimiter({
+  maxLogs: 100,
+  windowMs: 60000, // 100 logs per minute
+});
+
+// Per-message rate limiting
+logger.info('High frequency event', {
+  _rateLimit: '5/minute', // Only log this message 5 times per minute
+  _sample: 0.1,          // Only sample 10% of these logs
+});
+```
+
+### Pretty Print Development Mode
+
+Beautiful console output during development:
+
+```typescript
+import { PrettyFormatter } from 'nexlog/formatters';
+
+const formatter = new PrettyFormatter({
+  colors: true,
+  emoji: true,           // Use emoji for log levels
+  timestamps: 'relative', // Show relative timestamps
+  groupCollapsed: true,   // Collapse metadata groups
+});
+
+// Development logger with pretty printing
+const devLogger = new Logger({
+  formatter: process.env.NODE_ENV === 'development' ? formatter : undefined,
+});
 ```
 
 ### Performance Monitoring
@@ -320,25 +465,43 @@ Levels from least to most severe:
 - `error` - Error messages for failures
 - `fatal` - Critical failures requiring immediate attention
 
-## 🌍 Environment Detection
+## 🌍 Runtime Environment Support
 
-nexlog automatically detects and optimizes for different environments:
+Universal compatibility across all JavaScript runtimes:
 
 ```typescript
-import { detectEnvironment, isServer, isBrowser, isEdge } from 'nexlog';
+import { detectRuntime, IS_EDGE, IS_NODE, IS_BROWSER } from 'nexlog';
 
-console.log(detectEnvironment()); // 'server' | 'browser' | 'edge' | 'unknown'
+// Automatic runtime detection and optimization
+console.log(detectRuntime()); // 'node' | 'edge' | 'browser' | 'worker' | 'bun'
 
-if (isServer) {
-  // Server-specific logging with colors
+// Edge Runtime (Vercel Edge Functions, Cloudflare Workers)
+if (IS_EDGE) {
+  // Optimized for edge with structured logging
+  import('nexlog/edge').then(({ EdgeLogger }) => {
+    const logger = new EdgeLogger({ structured: true });
+  });
 }
 
-if (isBrowser) {
-  // Browser-specific logging
+// Node.js (full feature set)
+if (IS_NODE) {
+  // Full features including AsyncLocalStorage context
+  import('nexlog').then(({ Logger }) => {
+    const logger = new Logger({ 
+      useAsyncContext: true,
+      colors: true,
+    });
+  });
 }
 
-if (isEdge) {
-  // Edge runtime optimizations
+// Browser (security-focused)
+if (IS_BROWSER) {
+  // Client-safe logging with automatic sensitive data filtering
+  import('nexlog/browser').then(({ BrowserLogger }) => {
+    const logger = new BrowserLogger({ 
+      maxLevel: 'warn', // Don't send debug info to client
+    });
+  });
 }
 ```
 
@@ -490,17 +653,53 @@ configManager.set('samplingRate', 0.5);
 console.log(ENV_VARS.NEXLOG_LEVEL); // "NEXLOG_LEVEL"
 ```
 
-## 🔧 Configuration with Next.js
+## 🔧 Next.js Integration
 
-For Next.js applications, add nexlog to transpilePackages:
+### Edge Runtime Configuration
 
 ```javascript
 // next.config.js
 const nextConfig = {
-  transpilePackages: ["nexlog"],
+  // No transpilePackages needed for v5.2.1+!
+  experimental: {
+    runtime: 'edge', // nexlog works seamlessly
+  },
 };
 
 export default nextConfig;
+```
+
+### Security Best Practices
+
+```typescript
+// app/api/secure/route.ts - Server-side only
+import logger from 'nexlog';
+
+export async function POST(request: Request) {
+  // This will be automatically sanitized
+  logger.info('API call', {
+    apiKey: request.headers.get('authorization'), // → [REDACTED]
+    userId: getUserId(request),
+    timestamp: Date.now(),
+  });
+}
+```
+
+```typescript
+// app/components/ClientComponent.tsx - Client-safe
+'use client';
+import logger from 'nexlog';
+
+export default function ClientComponent() {
+  const handleClick = () => {
+    // Only non-sensitive logs reach the client
+    logger.info('Button clicked', { 
+      button: 'submit',
+      timestamp: Date.now(),
+      // Any sensitive data is automatically filtered
+    });
+  };
+}
 ```
 
 ## 🎨 API Reference
@@ -639,6 +838,32 @@ bun run test-env.ts
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+## 🚨 Security & Compliance
+
+### GDPR Compliance
+
+nexlog automatically protects personally identifiable information:
+
+- **Email addresses**: `user@example.com` → `us***@example.com`
+- **Credit cards**: `4532123456789012` → `****9012`
+- **API keys**: `sk_live_xyz123` → `[REDACTED]`
+- **Passwords**: Any field named `password`, `pass`, `pwd` → `[REDACTED]`
+- **Tokens**: `access_token`, `refresh_token`, etc. → `[REDACTED]`
+
+### Client/Server Security Separation
+
+```typescript
+// Server-side: Full logging with sensitive data sanitization
+import logger from 'nexlog'; // Full server logger
+
+// Client-side: Automatically filtered logging
+import logger from 'nexlog/browser'; // Client-safe logger
+```
+
+## 📚 Documentation
+
+For comprehensive production implementation guidance, see our [**Implementation Guide**](./IMPLEMENTATION_GUIDE.md).
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
@@ -647,30 +872,37 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 If you find nexlog helpful, consider [sponsoring me](https://github.com/sponsors/Arakiss). Your support helps maintain and improve this project.
 
-## 🔄 Migration from v3.x
+## 🔄 Migration Guide
 
-The new v4.0 includes breaking changes but provides a compatibility layer:
+### From v4.x to v5.2.1+
+
+The v5.2.1+ release is backward compatible with enhanced features:
 
 ```typescript
-// Old API (v3.x) - still works
+// v4.x code still works
 import logger from 'nexlog';
 logger.info('Hello');
 
-// New API (v4.0) - recommended
-import { Logger } from 'nexlog';
-const logger = new Logger({ 
-  level: 'info',
-  transports: [new ConsoleTransport()]
-});
-logger.info('Hello');
+// v5.2.1+ enhanced features
+import logger from 'nexlog';
+import { context } from 'nexlog/context';
+
+// Now with automatic data sanitization and context
+context()
+  .withRequestId('req_123')
+  .run(() => {
+    logger.info('Hello', {
+      password: 'secret123', // → [REDACTED]
+      userId: 12345,         // → preserved
+    });
+  });
 ```
 
-Key improvements in v4.0:
-- Class-based architecture for better extensibility
-- Transport system for flexible log output
-- Plugin system for custom functionality
-- Batching and performance optimizations
-- Enhanced React integration with new hooks
-- Full TypeScript rewrite with better types
-- Structured logging support
-- Performance monitoring utilities
+Key improvements in v5.2.1+:
+- **Edge Runtime compatibility** for Next.js middleware
+- **Automatic data sanitization** with GDPR compliance
+- **Correlation IDs** with W3C Trace Context support
+- **Advanced error serialization** with cause chains
+- **Performance improvements** with memory leak prevention
+- **Context management** with AsyncLocalStorage
+- **Security by default** with client/server separation
