@@ -5,7 +5,7 @@
 import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { Logger } from "../src/index";
+import logger, { Logger } from "../src/index";
 import {
 	LoggerDevTools,
 	LoggerProvider,
@@ -47,6 +47,9 @@ beforeEach(() => {
 	// Mock Math.random to ensure deterministic sampling behavior
 	// Return 0 so all logs pass sampling check (0 <= samplingRate for any value)
 	Math.random = () => 0;
+	// Override sampling rate to 1.0 to ensure all logs pass sampling check
+	// biome-ignore lint/suspicious/noExplicitAny: Accessing private property for testing
+	(logger as any).config.samplingRate = 1.0;
 });
 
 // Test component that uses the logger
