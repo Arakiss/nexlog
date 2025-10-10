@@ -205,7 +205,7 @@ export class PrettyFormatter {
 		}
 	}
 
-	private formatValue(value: any): string {
+	private formatValue(value: unknown): string {
 		if (typeof value === "string") {
 			return this.colorize(`"${value}"`, COLORS.green);
 		} else if (typeof value === "number") {

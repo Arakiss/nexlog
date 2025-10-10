@@ -33,6 +33,7 @@ export type ParsedStackTrace = ParsedStackFrame;
 /**
  * Advanced error serializer with cause chain support
  */
+// biome-ignore lint/complexity/noStaticOnlyClass: Static-only class pattern is intentional for ErrorSerializer utility
 export class ErrorSerializer {
 	private static readonly MAX_DEPTH = 10;
 	private static readonly MAX_PROPERTIES = 50;
@@ -238,9 +239,9 @@ export class ErrorSerializer {
 
 		for (const prop of commonProps) {
 			if (prop in error && error[prop as keyof typeof error] != null) {
-				serialized[prop as keyof SerializedError] = error[
-					prop as keyof typeof error
-				] as any;
+				serialized[prop as keyof SerializedError] =
+					// biome-ignore lint/suspicious/noExplicitAny: Dynamic property access requires type assertion
+					error[prop as keyof typeof error] as any;
 			}
 		}
 	}

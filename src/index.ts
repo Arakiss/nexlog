@@ -24,6 +24,7 @@ import {
 } from "./runtime/detector.js";
 import { Sanitizer } from "./sanitizer/index.js";
 import type {
+	// biome-ignore lint/style/useNamingConvention: ILogger is an intentional interface naming pattern
 	Logger as ILogger,
 	LogEntry,
 	LoggerPlugin,
@@ -62,7 +63,7 @@ export interface LoggerConfig {
 	samplingRate?: number;
 	bufferSize?: number;
 	sanitize?: boolean;
-	sanitizeOptions?: any;
+	sanitizeOptions?: Record<string, unknown>;
 	maskFields?: string[];
 	prettyPrint?: boolean | PrettyPrintOptions;
 	correlationContext?: CorrelationContext;
@@ -247,7 +248,8 @@ export class Logger implements ILogger {
 	private readonly environment: RuntimeEnvironment;
 	private readonly buffer: CircularBuffer<LogEntry>;
 	private readonly sanitizer?: Sanitizer;
-	private prettyFormatter?: PrettyFormatter;
+	// biome-ignore lint/correctness/noUnusedPrivateClassMembers: Reserved for future pretty printing functionality
+	private readonly prettyFormatter?: PrettyFormatter;
 
 	constructor(config?: LoggerConfig) {
 		this.environment = detectRuntime();
@@ -478,6 +480,7 @@ export class Logger implements ILogger {
 	/**
 	 * Sets SSR-only mode
 	 */
+	// biome-ignore lint/style/useNamingConvention: SSR is an acronym and this is the conventional naming
 	setSSROnly(ssrOnly: boolean): void {
 		this.config.ssrOnly = ssrOnly;
 	}
@@ -767,9 +770,9 @@ export class Logger implements ILogger {
 		uptime: number;
 		children: number;
 		transports: number;
-		bufferStats: any;
+		bufferStats: ReturnType<CircularBuffer<LogEntry>["getStats"]>;
 		runtime: RuntimeEnvironment;
-		capabilities: any;
+		capabilities: typeof CAPABILITIES;
 	} {
 		return {
 			logCount: this.logCount,
