@@ -41,6 +41,22 @@
 		"./types": {
 			"import": "./dist/types.js",
 			"types": "./dist/types.d.ts"
+		},
+		"./browser": {
+			"import": "./dist/browser.js",
+			"types": "./dist/browser.d.ts"
+		},
+		"./formatters": {
+			"import": "./dist/formatters/index.js",
+			"types": "./dist/formatters/index.d.ts"
+		},
+		"./utils": {
+			"import": "./dist/utils/index.js",
+			"types": "./dist/utils/index.d.ts"
+		},
+		"./correlation": {
+			"import": "./dist/correlation/index.js",
+			"types": "./dist/correlation/index.d.ts"
 		}
 	},
 	"files": [

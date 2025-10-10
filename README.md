@@ -497,10 +497,8 @@ if (IS_NODE) {
 // Browser (security-focused)
 if (IS_BROWSER) {
   // Client-safe logging with automatic sensitive data filtering
-  import('nexlog/browser').then(({ BrowserLogger }) => {
-    const logger = new BrowserLogger({ 
-      maxLevel: 'warn', // Don't send debug info to client
-    });
+  import('nexlog/browser').then(({ default: logger }) => {
+    logger.setLevel('warn'); // Don't send debug info to client
   });
 }
 ```
