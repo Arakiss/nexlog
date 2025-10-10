@@ -84,6 +84,7 @@ web_modules/
 .rpt2_cache/
 .rts2_cache_cjs/
 .rts2_cache_es/
+CLAUDE.md
 .rts2_cache_umd/
 
 # Optional REPL history
