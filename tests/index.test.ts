@@ -50,6 +50,12 @@ beforeEach(() => {
 	for (const mockedFn of Object.values(mockedConsole)) {
 		mockedFn.mockClear();
 	}
+	// Clear all NEXLOG_* environment variables to prevent CI interference
+	Object.keys(process.env).forEach((key) => {
+		if (key.startsWith("NEXLOG_")) {
+			delete process.env[key];
+		}
+	});
 	// Reset logger to default state
 	logger.setLevel("trace");
 	logger.enable();
