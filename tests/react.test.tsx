@@ -5,7 +5,7 @@
 import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import React from "react";
 import { renderToString } from "react-dom/server";
-import logger, { Logger } from "../src/index";
+import logger, { configManager, Logger } from "../src/index";
 import {
 	LoggerDevTools,
 	LoggerProvider,
@@ -50,11 +50,11 @@ beforeEach(() => {
 	// Override sampling rate to 1.0 to ensure all logs pass sampling check
 	// biome-ignore lint/suspicious/noExplicitAny: Accessing private property for testing
 	(logger as any).config.samplingRate = 1.0;
-	// Clear include/exclude patterns to ensure all messages are logged
+	// Clear include/exclude patterns on configManager to ensure all messages are logged
 	// biome-ignore lint/suspicious/noExplicitAny: Accessing private property for testing
-	(logger as any).config.includePatterns = undefined;
+	(configManager as any).config.includePatterns = undefined;
 	// biome-ignore lint/suspicious/noExplicitAny: Accessing private property for testing
-	(logger as any).config.excludePatterns = undefined;
+	(configManager as any).config.excludePatterns = undefined;
 });
 
 // Test component that uses the logger
