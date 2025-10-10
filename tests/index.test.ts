@@ -31,6 +31,9 @@ const originalConsole = {
 	debug: console.debug,
 };
 
+// Save original Math.random to restore later
+const originalRandom = Math.random;
+
 // Mock console methods
 let mockedConsole: Record<string, Mock<(...args: unknown[]) => void>> = {};
 
@@ -56,6 +59,9 @@ beforeEach(() => {
 			delete process.env[key];
 		}
 	});
+	// Mock Math.random to ensure deterministic sampling behavior
+	// Return 0 so all logs pass sampling check (0 <= samplingRate for any value)
+	Math.random = () => 0;
 	// Reset logger to default state
 	logger.setLevel("trace");
 	logger.enable();
@@ -65,6 +71,8 @@ beforeEach(() => {
 afterAll(() => {
 	// Restore original console
 	Object.assign(console, originalConsole);
+	// Restore original Math.random
+	Math.random = originalRandom;
 });
 
 describe("Environment Detection", () => {

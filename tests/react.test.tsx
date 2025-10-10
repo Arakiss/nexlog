@@ -23,6 +23,9 @@ const originalConsole = {
 	debug: console.debug,
 };
 
+// Save original Math.random to restore later
+const originalRandom = Math.random;
+
 const mockedConsole = {
 	info: mock(() => {}),
 	warn: mock(() => {}),
@@ -35,6 +38,15 @@ beforeEach(() => {
 	for (const fn of Object.values(mockedConsole)) {
 		fn.mockClear();
 	}
+	// Clear all NEXLOG_* environment variables to prevent CI interference
+	Object.keys(process.env).forEach((key) => {
+		if (key.startsWith("NEXLOG_")) {
+			delete process.env[key];
+		}
+	});
+	// Mock Math.random to ensure deterministic sampling behavior
+	// Return 0 so all logs pass sampling check (0 <= samplingRate for any value)
+	Math.random = () => 0;
 });
 
 // Test component that uses the logger
@@ -427,7 +439,8 @@ describe("Backwards Compatibility", () => {
 	});
 });
 
-// Restore console after all tests
+// Restore console and Math.random after all tests
 afterAll(() => {
 	Object.assign(console, originalConsole);
+	Math.random = originalRandom;
 });
