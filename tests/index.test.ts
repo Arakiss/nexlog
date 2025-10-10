@@ -69,6 +69,11 @@ beforeEach(() => {
 	// Override sampling rate to 1.0 to ensure all logs pass sampling check
 	// biome-ignore lint/suspicious/noExplicitAny: Accessing private property for testing
 	(logger as any).config.samplingRate = 1.0;
+	// Clear include/exclude patterns to ensure all messages are logged
+	// biome-ignore lint/suspicious/noExplicitAny: Accessing private property for testing
+	(logger as any).config.includePatterns = undefined;
+	// biome-ignore lint/suspicious/noExplicitAny: Accessing private property for testing
+	(logger as any).config.excludePatterns = undefined;
 });
 
 afterAll(() => {
