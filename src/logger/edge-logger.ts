@@ -25,7 +25,7 @@ export interface EdgeLoggerConfig {
 	structured?: boolean;
 	samplingRate?: number;
 	sanitize?: boolean;
-	sanitizeOptions?: any;
+	sanitizeOptions?: Record<string, unknown>;
 	bufferSize?: number;
 	useColors?: boolean;
 }
@@ -218,6 +218,7 @@ export class EdgeLogger {
 	 */
 	use(plugin: LoggerPlugin): void {
 		this.plugins.push(plugin);
+		// biome-ignore lint/suspicious/noExplicitAny: Plugin init accepts unknown type for logger interface compatibility
 		plugin.init?.(this as any);
 	}
 
@@ -420,7 +421,7 @@ export class EdgeLogger {
 		uptime: number;
 		children: number;
 		transports: number;
-		bufferStats: any;
+		bufferStats: ReturnType<CircularBuffer<LogEntry>["getStats"]>;
 	} {
 		return {
 			logCount: this.logCount,

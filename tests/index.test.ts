@@ -10,8 +10,8 @@ import {
 } from "bun:test";
 import logger, {
 	BatchedTransport,
-	configManager,
 	ConsoleTransport,
+	configManager,
 	detectRuntime,
 	isBrowser,
 	isEdge,

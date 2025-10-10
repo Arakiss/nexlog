@@ -148,7 +148,7 @@ export interface Logger {
 	withContext(context: LogMetadata): Logger;
 
 	flush(): Promise<void>;
-	getStats(): any;
+	getStats(): Record<string, unknown>;
 }
 
 /**

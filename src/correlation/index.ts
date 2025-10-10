@@ -206,7 +206,7 @@ export class CorrelationManager {
 		return (
 			req: {
 				headers: Record<string, string | string[] | undefined>;
-				correlationContext?: any;
+				correlationContext?: CorrelationContext;
 			},
 			res: { setHeader: (name: string, value: string) => void },
 			next: () => void,

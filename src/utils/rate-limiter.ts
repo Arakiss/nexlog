@@ -108,6 +108,7 @@ export class MessageRateLimiter {
 			const options = this.parseRateLimitConfig(config);
 			this.limiters.set(config, new RateLimiter(options));
 		}
+		// biome-ignore lint/style/noNonNullAssertion: Map.has() check guarantees entry exists
 		return this.limiters.get(config)!;
 	}
 
