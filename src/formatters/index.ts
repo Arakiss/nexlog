@@ -1,1 +1,1 @@
-export { PrettyFormatter } from './pretty.js';
+export { PrettyFormatter } from "./pretty.js";
