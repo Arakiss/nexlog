@@ -6,7 +6,7 @@
 
 ## Why deprecated?
 
-This project suffered from severe versioning issues during its development (version 4.x was accidentally skipped, inconsistent releases, etc.). Rather than continuing with a confusing version history, we started fresh with a completely rewritten package:
+This project suffered from severe versioning issues during its development (version 4.x was accidentally skipped, inconsistent releases, etc.). Rather than continuing with a confusing version history, I started fresh with a completely rewritten package:
 
 **[sigil](https://github.com/Arakiss/sigil)** — A modern, runtime-agnostic structured logging library with:
 
