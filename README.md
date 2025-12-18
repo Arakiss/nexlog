@@ -6,7 +6,7 @@
 
 ## Why deprecated?
 
-This project suffered from severe versioning issues during its development (version 4.x was accidentally skipped, inconsistent releases, etc.). Rather than continuing with a confusing version history, we decided to start fresh with a new package that has:
+This project suffered from severe versioning issues during its development (version 4.x was accidentally skipped, inconsistent releases, etc.). Rather than continuing with a confusing version history, I decided to start fresh with a new package that has:
 
 - Clean version history starting from v1.0.0
 - Improved architecture based on lessons learned
