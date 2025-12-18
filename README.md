@@ -1,17 +1,21 @@
 # nexlog
 
-> **DEPRECATED**: This package is deprecated and no longer maintained. Please migrate to [logpulse](https://github.com/Arakiss/logpulse) for a complete rewrite with better architecture.
+> **⚠️ DEPRECATED**: This package is deprecated and no longer maintained. Please migrate to [**sigil**](https://github.com/Arakiss/sigil) — *Leave your mark.*
 
 ---
 
 ## Why deprecated?
 
-This project suffered from severe versioning issues during its development (version 4.x was accidentally skipped, inconsistent releases, etc.). Rather than continuing with a confusing version history, I decided to start fresh with a new package that has:
+This project suffered from severe versioning issues during its development (version 4.x was accidentally skipped, inconsistent releases, etc.). Rather than continuing with a confusing version history, we started fresh with a completely rewritten package:
 
-- Clean version history starting from v1.0.0
-- Improved architecture based on lessons learned
-- Better defaults out of the box
-- Same great features you loved from nexlog
+**[sigil](https://github.com/Arakiss/sigil)** — A modern, runtime-agnostic structured logging library with:
+
+- Clean version history
+- Automatic PII sanitization
+- Context propagation with correlation IDs
+- Multi-runtime support (Node.js, Bun, Deno, Edge, Browser)
+- Zero dependencies
+- Full TypeScript support
 
 ## Migration
 
@@ -19,16 +23,16 @@ This project suffered from severe versioning issues during its development (vers
 # Remove nexlog
 npm uninstall nexlog
 
-# Install logpulse
-npm install logpulse
+# Install sigil
+npm install sigil
 ```
 
 ```diff
 - import logger from 'nexlog';
-+ import logger from 'logpulse';
++ import { log } from 'sigil';
 ```
 
-The API is designed to be compatible, so migration should be straightforward.
+The API has been redesigned for better ergonomics. See the [sigil documentation](https://github.com/Arakiss/sigil#readme) for the full API.
 
 ## Legacy Documentation
 
