@@ -342,7 +342,9 @@ export class Logger implements ILogger {
 			context: { ...envConfig.context, ...config?.context },
 			batchSize: config?.batchSize ?? envConfig.batchSize ?? 100,
 			flushInterval: config?.flushInterval ?? envConfig.flushInterval ?? 1000,
-			transports: config?.transports ?? this.createDefaultTransports(transportConfig, envConfig),
+			transports:
+				config?.transports ??
+				this.createDefaultTransports(transportConfig, envConfig),
 			structured: config?.structured ?? envConfig.structured ?? false,
 			samplingRate: config?.samplingRate ?? envConfig.samplingRate ?? 1,
 			bufferSize: config?.bufferSize ?? DEFAULTS.bufferSize,

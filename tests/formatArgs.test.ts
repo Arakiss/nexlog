@@ -2,7 +2,7 @@
  * Tests for formatArgs function - console.log-style variadic argument support
  * This addresses GitHub Issue #6: Logging function signature incompatibility
  */
-import { describe, test, expect, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 import { Logger } from "../src/index";
 
 // Helper to capture logged metadata
