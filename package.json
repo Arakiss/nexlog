@@ -57,6 +57,14 @@
 		"./correlation": {
 			"import": "./dist/correlation/index.js",
 			"types": "./dist/correlation/index.d.ts"
+		},
+		"./config": {
+			"import": "./dist/config.js",
+			"types": "./dist/config.d.ts"
+		},
+		"./transports": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
 		}
 	},
 	"files": [

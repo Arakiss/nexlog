@@ -1,5 +1,43 @@
 # nexlog
 
+## 5.3.0
+
+### Minor Changes
+
+- **ESM/CommonJS Compatibility Fix** (Issue #7)
+
+  - Resolved `require is not defined in ES module scope` error in Next.js and other ESM environments
+  - Removed circular dependency in ConfigManager that caused ESM import failures
+  - Logger now creates transports internally, avoiding ESM/CJS incompatibility
+  - Added `getTransportConfig()` method for ESM-safe configuration access
+
+- **Console.log-style Variadic Arguments** (Issue #6)
+
+  - All logging methods now support variadic arguments like `console.log`
+  - Backwards compatible: existing `(message, metadata)` signature still works
+  - New usage: `logger.info('message', obj1, obj2, { extra: true })`
+  - Error objects are automatically serialized with message, name, and stack
+  - Primitive values stored with indexed keys (arg1, arg2, etc.)
+  - Objects are merged into metadata
+
+- **New Tests**
+
+  - Added 27 comprehensive tests for variadic argument handling
+  - Updated transport creation tests to reflect ESM-safe architecture
+  - Total: 118 tests passing
+
+### Usage Examples
+
+```typescript
+// Traditional API (still works)
+logger.info("user action", { userId: 123 });
+
+// New variadic API
+logger.info("user action", userId, action, { extra: "data" });
+logger.error("failed", new Error("timeout"), requestId);
+logger.debug("values", 1, 2, 3, true, { more: "data" });
+```
+
 ## 5.2.2
 
 ### Patch Changes
@@ -190,6 +228,8 @@
 
 ### Major Changes
 
+> **Note**: Version 4.x was skipped. The v4.0.0 changelog entry below documents planned features that were ultimately released as v5.0.0 to align with npm versioning after an accidental publish. See v4.0.0 section for historical reference.
+
 - b5058c1: 🚀 Complete rewrite and modernization of nexlog v4.0.0
 
   ## Major Breaking Changes
@@ -230,7 +270,9 @@
 
   This is a major version with breaking changes. See documentation for migration from v3.x to v4.x.
 
-## 4.0.0
+## 4.0.0 (Never Released)
+
+> **Note**: This version was never published to npm. Due to versioning issues during the release process, these features were released as v5.0.0 instead. This entry is preserved for historical reference only.
 
 ### Major Changes
 

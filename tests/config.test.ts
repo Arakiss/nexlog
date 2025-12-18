@@ -247,40 +247,45 @@ describe("ConfigManager", () => {
 	});
 
 	describe("Transport Creation", () => {
-		test("creates console transport when enabled", () => {
+		// Note: createTransports() now returns an empty array by design
+		// to avoid ESM circular dependency issues. The Logger class creates
+		// transports directly using getTransportConfig(). These tests verify
+		// the configuration is properly provided.
+
+		test("getTransportConfig returns correct config when enabled", () => {
 			setEnvAndReload({
 				NEXLOG_TRANSPORTS: "console",
 				NEXLOG_CONSOLE_ENABLED: "true",
-				// Note: Since batchSize and flushInterval are set from previous tests
-				// and this is a singleton, we'll expect batched transport
+				NEXLOG_USE_COLORS: "true",
+				NEXLOG_STRUCTURED: "false",
 			});
 
-			const transports = configManager.createTransports();
-			expect(transports.length).toBeGreaterThan(0);
-			// With singleton pattern, previous configs may still be active
-			// So we might get batched transport wrapping console
-			expect(["console", "batched"]).toContain(transports[0].name);
+			const config = configManager.getTransportConfig();
+			expect(config).toBeDefined();
+			expect(config.useColors).toBe(true);
+			expect(config.structured).toBe(false);
 		});
 
-		test("doesn't create transports when logger is disabled", () => {
+		test("createTransports returns empty array (ESM-safe design)", () => {
 			setEnvAndReload({
-				NEXLOG_ENABLED: "false",
+				NEXLOG_ENABLED: "true",
 			});
 
+			// This is the expected behavior - Logger creates transports internally
 			const transports = configManager.createTransports();
 			expect(transports.length).toBe(0);
 		});
 
-		test("creates batched transport when batch size is set", () => {
+		test("getTransportConfig includes batch settings when configured", () => {
 			setEnvAndReload({
 				NEXLOG_BATCH_SIZE: "100",
+				NEXLOG_FLUSH_INTERVAL: "3000",
 				NEXLOG_TRANSPORTS: "console",
 			});
 
-			const transports = configManager.createTransports();
-			expect(transports.length).toBeGreaterThan(0);
-			// The batched transport wraps the console transport
-			expect(transports[0].name).toBe("batched");
+			const config = configManager.getTransportConfig();
+			expect(config.batchSize).toBe(100);
+			expect(config.flushInterval).toBe(3000);
 		});
 	});
 

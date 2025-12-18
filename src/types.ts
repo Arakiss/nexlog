@@ -130,13 +130,21 @@ export type LogLevelValue = (typeof LogLevels)[keyof typeof LogLevels];
  * Generic logger interface for type safety
  */
 export interface Logger {
+	// All logging methods support both traditional (message, metadata) and console.log-style variadic args
 	trace(message: string, metadata?: LogMetadata): void;
+	trace(...args: unknown[]): void;
 	debug(message: string, metadata?: LogMetadata): void;
+	debug(...args: unknown[]): void;
 	info(message: string, metadata?: LogMetadata): void;
+	info(...args: unknown[]): void;
 	success(message: string, metadata?: LogMetadata): void;
+	success(...args: unknown[]): void;
 	warn(message: string, metadata?: LogMetadata): void;
+	warn(...args: unknown[]): void;
 	error(message: string, metadata?: LogMetadata): void;
+	error(...args: unknown[]): void;
 	fatal(message: string, metadata?: LogMetadata): void;
+	fatal(...args: unknown[]): void;
 
 	setLevel(level: LogLevel): void;
 	getLevel(): LogLevel;

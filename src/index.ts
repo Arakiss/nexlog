@@ -35,6 +35,79 @@ import type {
 import { CircularBuffer } from "./utils/circular-buffer.js";
 import { ErrorSerializer } from "./utils/error-serializer.js";
 
+/**
+ * Formats multiple arguments into a message and metadata
+ * Supports console.log-style variadic arguments for easy migration
+ */
+function formatArgs(args: unknown[]): {
+	message: string;
+	metadata?: LogMetadata;
+} {
+	if (args.length === 0) {
+		return { message: "" };
+	}
+
+	// If first argument is a string, use it as message
+	if (typeof args[0] === "string") {
+		const message = args[0];
+
+		// If only one argument, just return the message
+		if (args.length === 1) {
+			return { message };
+		}
+
+		// If second argument is an object (not Error) and there are only 2 args, treat as metadata
+		if (
+			args.length === 2 &&
+			typeof args[1] === "object" &&
+			args[1] !== null &&
+			!(args[1] instanceof Error)
+		) {
+			return { message, metadata: args[1] as LogMetadata };
+		}
+
+		// Multiple arguments: format them as metadata with indexed keys or serialize
+		const extraArgs = args.slice(1);
+		const metadata: LogMetadata = {};
+
+		for (let i = 0; i < extraArgs.length; i++) {
+			const arg = extraArgs[i];
+			if (arg instanceof Error) {
+				metadata.error = arg;
+				metadata.errorMessage = arg.message;
+				metadata.errorStack = arg.stack;
+			} else if (typeof arg === "object" && arg !== null) {
+				// Merge object properties into metadata
+				Object.assign(metadata, arg);
+			} else {
+				// Store primitive values with indexed keys
+				metadata[`arg${i + 1}`] = arg;
+			}
+		}
+
+		return {
+			message,
+			metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+		};
+	}
+
+	// First argument is not a string - convert everything to a message
+	const parts = args.map((arg) => {
+		if (arg === null) return "null";
+		if (arg === undefined) return "undefined";
+		if (typeof arg === "object") {
+			try {
+				return JSON.stringify(arg);
+			} catch {
+				return String(arg);
+			}
+		}
+		return String(arg);
+	});
+
+	return { message: parts.join(" ") };
+}
+
 export * from "./constants.js";
 export * from "./context/index.js";
 export * from "./correlation/index.js";
@@ -257,6 +330,9 @@ export class Logger implements ILogger {
 		// Get configuration from environment first
 		const envConfig = configManager.getConfig();
 
+		// Get transport configuration (ESM-safe, no circular dependency)
+		const transportConfig = configManager.getTransportConfig();
+
 		// Merge configurations: defaults < env < explicit config
 		this.config = {
 			level: config?.level ?? envConfig.level ?? "info",
@@ -266,9 +342,7 @@ export class Logger implements ILogger {
 			context: { ...envConfig.context, ...config?.context },
 			batchSize: config?.batchSize ?? envConfig.batchSize ?? 100,
 			flushInterval: config?.flushInterval ?? envConfig.flushInterval ?? 1000,
-			transports:
-				config?.transports ??
-				(envConfig.enabled !== false ? configManager.createTransports() : []),
+			transports: config?.transports ?? this.createDefaultTransports(transportConfig, envConfig),
 			structured: config?.structured ?? envConfig.structured ?? false,
 			samplingRate: config?.samplingRate ?? envConfig.samplingRate ?? 1,
 			bufferSize: config?.bufferSize ?? DEFAULTS.bufferSize,
@@ -321,6 +395,39 @@ export class Logger implements ILogger {
 		if (envConfig.debug) {
 			console.log("[nexlog] Logger initialized with config:", this.config);
 		}
+	}
+
+	/**
+	 * Creates default transports based on configuration
+	 * This avoids circular dependency issues with ESM imports
+	 */
+	private createDefaultTransports(
+		transportConfig: {
+			useColors?: boolean;
+			structured?: boolean;
+			batchSize?: number;
+			flushInterval?: number;
+		},
+		envConfig: { enabled?: boolean },
+	): Transport[] {
+		if (envConfig.enabled === false) return [];
+
+		const consoleTransport = new ConsoleTransport({
+			useColors: transportConfig.useColors,
+			structured: transportConfig.structured,
+		});
+
+		// Wrap in batched transport if configured
+		if (transportConfig.batchSize || transportConfig.flushInterval) {
+			return [
+				new BatchedTransport(consoleTransport, {
+					maxBatchSize: transportConfig.batchSize,
+					flushInterval: transportConfig.flushInterval,
+				}),
+			];
+		}
+
+		return [consoleTransport];
 	}
 
 	/**
@@ -650,50 +757,106 @@ export class Logger implements ILogger {
 
 	/**
 	 * Logs a trace message
+	 * Supports both traditional (message, metadata) and console.log-style variadic arguments
+	 * @example
+	 * logger.trace('message')
+	 * logger.trace('message', { key: 'value' })
+	 * logger.trace('user logged in', userId, action, { extra: 'data' })
 	 */
-	trace(message: string, metadata?: LogMetadata): void {
+	trace(message: string, metadata?: LogMetadata): void;
+	trace(...args: unknown[]): void;
+	trace(...args: unknown[]): void {
+		const { message, metadata } = formatArgs(args);
 		this.log("trace", message, metadata);
 	}
 
 	/**
 	 * Logs a debug message
+	 * Supports both traditional (message, metadata) and console.log-style variadic arguments
+	 * @example
+	 * logger.debug('message')
+	 * logger.debug('message', { key: 'value' })
+	 * logger.debug('processing', item1, item2, { batch: true })
 	 */
-	debug(message: string, metadata?: LogMetadata): void {
+	debug(message: string, metadata?: LogMetadata): void;
+	debug(...args: unknown[]): void;
+	debug(...args: unknown[]): void {
+		const { message, metadata } = formatArgs(args);
 		this.log("debug", message, metadata);
 	}
 
 	/**
 	 * Logs an info message
+	 * Supports both traditional (message, metadata) and console.log-style variadic arguments
+	 * @example
+	 * logger.info('message')
+	 * logger.info('message', { key: 'value' })
+	 * logger.info('server started', port, host)
 	 */
-	info(message: string, metadata?: LogMetadata): void {
+	info(message: string, metadata?: LogMetadata): void;
+	info(...args: unknown[]): void;
+	info(...args: unknown[]): void {
+		const { message, metadata } = formatArgs(args);
 		this.log("info", message, metadata);
 	}
 
 	/**
 	 * Logs a success message
+	 * Supports both traditional (message, metadata) and console.log-style variadic arguments
+	 * @example
+	 * logger.success('message')
+	 * logger.success('message', { key: 'value' })
+	 * logger.success('operation completed', result, duration)
 	 */
-	success(message: string, metadata?: LogMetadata): void {
+	success(message: string, metadata?: LogMetadata): void;
+	success(...args: unknown[]): void;
+	success(...args: unknown[]): void {
+		const { message, metadata } = formatArgs(args);
 		this.log("success", message, metadata);
 	}
 
 	/**
 	 * Logs a warning message
+	 * Supports both traditional (message, metadata) and console.log-style variadic arguments
+	 * @example
+	 * logger.warn('message')
+	 * logger.warn('message', { key: 'value' })
+	 * logger.warn('deprecated API used', endpoint, suggestion)
 	 */
-	warn(message: string, metadata?: LogMetadata): void {
+	warn(message: string, metadata?: LogMetadata): void;
+	warn(...args: unknown[]): void;
+	warn(...args: unknown[]): void {
+		const { message, metadata } = formatArgs(args);
 		this.log("warn", message, metadata);
 	}
 
 	/**
 	 * Logs an error message
+	 * Supports both traditional (message, metadata) and console.log-style variadic arguments
+	 * @example
+	 * logger.error('message')
+	 * logger.error('message', { key: 'value' })
+	 * logger.error('request failed', new Error('timeout'), requestId)
 	 */
-	error(message: string, metadata?: LogMetadata): void {
+	error(message: string, metadata?: LogMetadata): void;
+	error(...args: unknown[]): void;
+	error(...args: unknown[]): void {
+		const { message, metadata } = formatArgs(args);
 		this.log("error", message, metadata);
 	}
 
 	/**
 	 * Logs a fatal message
+	 * Supports both traditional (message, metadata) and console.log-style variadic arguments
+	 * @example
+	 * logger.fatal('message')
+	 * logger.fatal('message', { key: 'value' })
+	 * logger.fatal('system crash', new Error('OOM'), { heap: usedMemory })
 	 */
-	fatal(message: string, metadata?: LogMetadata): void {
+	fatal(message: string, metadata?: LogMetadata): void;
+	fatal(...args: unknown[]): void;
+	fatal(...args: unknown[]): void {
+		const { message, metadata } = formatArgs(args);
 		this.log("fatal", message, metadata);
 	}
 

@@ -492,40 +492,31 @@ export class ConfigManager {
 
 	/**
 	 * Create transports based on environment configuration
+	 * Returns an empty array - transports should be created by the Logger class
+	 * to avoid circular dependency issues with ESM
 	 */
 	createTransports(): Transport[] {
-		const transports: Transport[] = [];
+		// Note: This method returns empty array to avoid circular dependency.
+		// The Logger class creates default transports directly.
+		// This maintains backwards compatibility while fixing ESM issues.
+		return [];
+	}
 
-		// Import dynamically to avoid circular dependency
-		const { ConsoleTransport, BatchedTransport } = require("./index.js");
-
-		// Console transport (default)
-		if (this.config.enabled !== false) {
-			const consoleTransport = new ConsoleTransport({
-				useColors: this.config.useColors,
-				structured: this.config.structured,
-			});
-
-			// Wrap in batched transport if configured
-			if (this.config.batchSize || this.config.flushInterval) {
-				transports.push(
-					new BatchedTransport(consoleTransport, {
-						maxBatchSize: this.config.batchSize,
-						flushInterval: this.config.flushInterval,
-					}),
-				);
-			} else {
-				transports.push(consoleTransport);
-			}
-		}
-
-		// HTTP transport if configured
-		if (this.config.httpEndpoint) {
-			// You would implement HTTPTransport here
-			// transports.push(new HTTPTransport({ endpoint: this.config.httpEndpoint }));
-		}
-
-		return transports;
+	/**
+	 * Get transport configuration for Logger to create transports
+	 */
+	getTransportConfig(): {
+		useColors?: boolean;
+		structured?: boolean;
+		batchSize?: number;
+		flushInterval?: number;
+	} {
+		return {
+			useColors: this.config.useColors,
+			structured: this.config.structured,
+			batchSize: this.config.batchSize,
+			flushInterval: this.config.flushInterval,
+		};
 	}
 
 	/**

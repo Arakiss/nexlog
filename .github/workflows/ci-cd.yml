@@ -2,30 +2,122 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: oven-sh/setup-bun@v1
-    - run: bun install
-    - run: bun run lint
-    - run: bun run typecheck
-    - run: bun test
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - run: bun install
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Type Check
+        run: bun run typecheck
+
+      - name: Run Tests with Coverage
+        run: bun test --coverage
+
+      - name: Check Coverage Threshold
+        run: |
+          # Run coverage and capture output
+          COVERAGE_OUTPUT=$(bun test --coverage 2>&1)
+          echo "$COVERAGE_OUTPUT"
+
+          # Extract line coverage percentage (look for "Lines" or overall percentage)
+          LINE_COVERAGE=$(echo "$COVERAGE_OUTPUT" | grep -E "All files|Lines" | grep -oE "[0-9]+\.[0-9]+" | head -1)
+
+          if [ -z "$LINE_COVERAGE" ]; then
+            echo "Warning: Could not extract coverage percentage, skipping threshold check"
+            exit 0
+          fi
+
+          # Check if coverage meets 80% threshold
+          THRESHOLD=80
+          if (( $(echo "$LINE_COVERAGE < $THRESHOLD" | bc -l) )); then
+            echo "❌ Coverage ($LINE_COVERAGE%) is below threshold ($THRESHOLD%)"
+            exit 1
+          else
+            echo "✅ Coverage ($LINE_COVERAGE%) meets threshold ($THRESHOLD%)"
+          fi
 
   build:
     needs: test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: oven-sh/setup-bun@v1
-    - run: bun install
-    - run: bun run build
-    - uses: actions/upload-artifact@v4
-      with:
-        name: dist
-        path: dist
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - run: bun install
+      - run: bun run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed: dist directory not created"
+            exit 1
+          fi
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ Build failed: dist/index.js not found"
+            exit 1
+          fi
+          echo "✅ Build output verified"
+          ls -la dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+  # Version validation job for PRs
+  version-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for version changes
+        run: |
+          # Check if package.json version changed
+          git diff origin/main...HEAD -- package.json | grep -E '^\+.*"version"' && \
+            echo "⚠️ Version change detected in PR. Ensure CHANGELOG.md is updated." || \
+            echo "✅ No version change in PR"
+
+      - name: Validate semver format
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "❌ Invalid semver format: $VERSION"
+            exit 1
+          fi
+          echo "✅ Valid semver: $VERSION"

@@ -707,14 +707,24 @@ export default function ClientComponent() {
 ```typescript
 class Logger {
   constructor(config?: LoggerConfig)
-  
-  // Logging methods
+
+  // Logging methods - support both traditional and console.log-style variadic args
+  // Traditional: logger.info('message', { key: 'value' })
+  // Variadic:    logger.info('message', obj1, obj2, { extra: true })
   trace(message: string, metadata?: LogMetadata): void
+  trace(...args: unknown[]): void
   debug(message: string, metadata?: LogMetadata): void
+  debug(...args: unknown[]): void
   info(message: string, metadata?: LogMetadata): void
+  info(...args: unknown[]): void
+  success(message: string, metadata?: LogMetadata): void
+  success(...args: unknown[]): void
   warn(message: string, metadata?: LogMetadata): void
+  warn(...args: unknown[]): void
   error(message: string, metadata?: LogMetadata): void
+  error(...args: unknown[]): void
   fatal(message: string, metadata?: LogMetadata): void
+  fatal(...args: unknown[]): void
   
   // Configuration
   setLevel(level: LogLevel): void

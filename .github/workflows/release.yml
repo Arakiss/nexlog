@@ -10,8 +10,80 @@ permissions:
   pull-requests: write
 
 jobs:
+  # Validation checks before release
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      has_changesets: ${{ steps.check_changesets.outputs.has_changesets }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - run: bun install
+
+      - name: Validate package.json
+        run: |
+          # Check version is valid semver
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "❌ Invalid semver format: $VERSION"
+            exit 1
+          fi
+          echo "✅ Valid semver: $VERSION"
+
+          # Check required fields exist
+          node -e "
+            const pkg = require('./package.json');
+            const required = ['name', 'version', 'description', 'main', 'types', 'exports'];
+            const missing = required.filter(f => !pkg[f]);
+            if (missing.length) {
+              console.error('❌ Missing required fields:', missing.join(', '));
+              process.exit(1);
+            }
+            console.log('✅ All required package.json fields present');
+          "
+
+      - name: Run tests
+        run: bun test
+
+      - name: Build and verify
+        run: |
+          bun run build
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ Build verification failed"
+            exit 1
+          fi
+          echo "✅ Build verified"
+
+      - name: Check for changesets
+        id: check_changesets
+        run: |
+          if [ -d ".changeset" ] && ls .changeset/*.md 2>/dev/null | grep -v README.md | head -1; then
+            echo "has_changesets=true" >> $GITHUB_OUTPUT
+            echo "✅ Changesets found"
+          else
+            echo "has_changesets=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No changesets found"
+          fi
+
+  # Create release PR or publish
   release:
     name: Release
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,12 +94,30 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
       - run: bun install
 
       - name: Create Release Pull Request or Publish to npm
         uses: changesets/action@v1
         with:
           publish: bun run release
+          title: "chore(release): version packages"
+          commit: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Post-release verification
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          echo "🎉 Package published successfully!"
+          # Verify package is accessible on npm (with delay for propagation)
+          sleep 10
+          npm view nexlog version || echo "Package may still be propagating to npm registry"
