@@ -1,6 +1,6 @@
 # nexlog
 
-> **⚠️ DEPRECATED**: This package is deprecated and no longer maintained. Please migrate to [**sigil**](https://github.com/Arakiss/sigil) — *Leave your mark.*
+> **⚠️ DEPRECATED**: This package is deprecated and no longer maintained. Please migrate to [**vestig**](https://github.com/Arakiss/vestig) — *Leave a trace.*
 
 ---
 
@@ -8,7 +8,7 @@
 
 This project suffered from severe versioning issues during its development (version 4.x was accidentally skipped, inconsistent releases, etc.). Rather than continuing with a confusing version history, I started fresh with a completely rewritten package:
 
-**[sigil](https://github.com/Arakiss/sigil)** — A modern, runtime-agnostic structured logging library with:
+**[vestig](https://github.com/Arakiss/vestig)** — A modern, runtime-agnostic structured logging library with:
 
 - Clean version history
 - Automatic PII sanitization
@@ -23,16 +23,16 @@ This project suffered from severe versioning issues during its development (vers
 # Remove nexlog
 npm uninstall nexlog
 
-# Install sigil
-npm install sigil
+# Install vestig
+npm install vestig
 ```
 
 ```diff
 - import logger from 'nexlog';
-+ import { log } from 'sigil';
++ import { log } from 'vestig';
 ```
 
-The API has been redesigned for better ergonomics. See the [sigil documentation](https://github.com/Arakiss/sigil#readme) for the full API.
+The API has been redesigned for better ergonomics. See the [vestig documentation](https://github.com/Arakiss/vestig#readme) for the full API.
 
 ## Legacy Documentation
 
