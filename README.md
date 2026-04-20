@@ -1,3 +1,5 @@
+> ⚠️ **Archived** — This logger has been renamed and superseded by [**vestig**](https://github.com/Arakiss/vestig) (structured logging + automatic PII sanitization + context propagation). Use `vestig` instead.
+
 # nexlog
 
 > **⚠️ DEPRECATED**: This package is deprecated and no longer maintained. Please migrate to [**vestig**](https://github.com/Arakiss/vestig) — *Leave a trace.*
